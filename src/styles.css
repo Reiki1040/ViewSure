@@ -1,0 +1,256 @@
+:root {
+  color-scheme: light dark;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #0f1115;
+  color: #f5f5f5;
+  min-height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+}
+
+a {
+  color: inherit;
+}
+
+.app-shell {
+  flex: 1;
+  display: flex;
+  background: radial-gradient(circle at top, rgba(33, 36, 44, 0.9), rgba(15, 17, 21, 1));
+}
+
+.control-panel {
+  width: 340px;
+  padding: 32px 24px;
+  background-color: rgba(16, 18, 24, 0.85);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.branding {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.drop-zone {
+  position: relative;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.drop-zone.is-active {
+  border-color: #3f8efc;
+  background-color: rgba(63, 142, 252, 0.08);
+}
+
+.drop-zone.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.file-input {
+  display: none;
+}
+
+.drop-zone__title {
+  font-size: 1rem;
+  margin: 0 0 4px;
+}
+
+.drop-zone__subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.upload-status {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+.page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 20, 28, 0.6);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.page-indicator__label {
+  opacity: 0.7;
+  font-size: 0.75rem;
+}
+
+.page-indicator__value {
+  font-weight: 600;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.slider-value {
+  opacity: 0.8;
+}
+
+.controls input[type='range'] {
+  width: 100%;
+}
+
+.reset-button {
+  padding: 10px 16px;
+  background-color: rgba(63, 142, 252, 0.15);
+  color: #dce7ff;
+  border: 1px solid rgba(63, 142, 252, 0.4);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.reset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reset-button:not(:disabled):hover {
+  background-color: rgba(63, 142, 252, 0.25);
+  border-color: rgba(63, 142, 252, 0.6);
+}
+
+.viewport-container {
+  flex: 1;
+  display: flex;
+  padding: 24px;
+}
+
+.viewport {
+  flex: 1;
+  position: relative;
+  background: rgba(10, 12, 16, 0.75);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  display: flex;
+}
+
+.viewport__canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.viewport__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 15, 19, 0.7);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.viewport__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 20, 28, 0.7);
+  color: #f5f5f5;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.viewport__nav:hover:not(:disabled) {
+  background: rgba(63, 142, 252, 0.3);
+  border-color: rgba(63, 142, 252, 0.6);
+}
+
+.viewport__nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.viewport__nav--prev {
+  left: 24px;
+}
+
+.viewport__nav--next {
+  right: 24px;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .control-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .viewport-container {
+    padding: 16px;
+  }
+}
