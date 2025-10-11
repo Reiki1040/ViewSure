@@ -24,17 +24,12 @@ const App = () => {
 
     try {
       const projectionAsset = await loadProjectionAsset(file);
-      if (projectionAsset.frames.length === 0) {
-        throw new Error('プレビュー可能なページが見つかりませんでした');
-      }
       setCurrentFrame(1);
-      setBrightness(INITIAL_BRIGHTNESS);
-      setContrast(INITIAL_CONTRAST);
       setAsset(projectionAsset);
       setActiveFileName(file.name);
       setStatusMessage(
-        projectionAsset.frames.length > 1
-          ? `${file.name} (${projectionAsset.frames.length} ページ)`
+        projectionAsset.pageCount > 1
+          ? `${file.name} (${projectionAsset.pageCount} ページ)`
           : `${file.name} を読み込みました`
       );
     } catch (error) {
@@ -55,25 +50,35 @@ const App = () => {
   }, [brightness, contrast, updateAdjustments]);
 
   useEffect(() => {
-    if (!asset || asset.frames.length === 0) {
-      return;
+    let cancelled = false;
+    const currentAsset = asset;
+    if (!currentAsset || currentAsset.pageCount === 0) {
+      return () => {
+        cancelled = true;
+      };
     }
 
-    const frameIndex = Math.min(currentFrame - 1, asset.frames.length - 1);
-    const source = asset.frames[frameIndex];
-    let disposed = false;
+    const frameIndex = Math.min(currentFrame - 1, currentAsset.pageCount - 1);
 
     const renderFrame = async () => {
-      setIsLoading(true);
+      const shouldShowLoading = !(currentAsset.hasFrame?.(frameIndex) ?? false);
+      if (shouldShowLoading) {
+        setIsLoading(true);
+      }
       try {
+        const source = await currentAsset.getFrame(frameIndex);
+        if (cancelled) {
+          return;
+        }
         await loadImage(source);
+        updateAdjustments({ brightness, contrast });
       } catch (error) {
         console.error(error);
-        if (!disposed) {
+        if (!cancelled) {
           setStatusMessage(error instanceof Error ? error.message : 'フレームの描画に失敗しました');
         }
       } finally {
-        if (!disposed) {
+        if (!cancelled) {
           setIsLoading(false);
         }
       }
@@ -82,13 +87,13 @@ const App = () => {
     void renderFrame();
 
     return () => {
-      disposed = true;
+      cancelled = true;
     };
-  }, [asset, currentFrame, loadImage]);
+  }, [asset, brightness, contrast, currentFrame, loadImage, updateAdjustments]);
 
   const handlePageChange = useCallback(
     (page: number) => {
-      const pageCount = asset?.frames.length ?? 0;
+      const pageCount = asset?.pageCount ?? 0;
       const nextPage = Math.min(Math.max(page, 1), pageCount || 1);
 
       if (nextPage === currentFrame) {
@@ -106,7 +111,7 @@ const App = () => {
     [activeFileName, asset, currentFrame]
   );
 
-  const pageCount = asset?.frames.length ?? 0;
+  const pageCount = asset?.pageCount ?? 0;
   const canGoPrev = pageCount > 1 && currentFrame > 1;
   const canGoNext = pageCount > 1 && currentFrame < pageCount;
 
@@ -129,25 +134,36 @@ const App = () => {
     [resetAdjustments]
   );
 
+  useEffect(() => {
+    return () => {
+      asset?.dispose?.();
+    };
+  }, [asset]);
+
   return (
     <div className="app-shell">
       <aside className="control-panel">
-        <h1 className="branding">ViewSure プロジェクションプレビュー</h1>
-        <FileUploader
-          disabled={isLoading}
-          onFileSelected={handleFileSelected}
-          statusMessage={statusMessage}
-        />
-        <ProjectionControls
-          brightness={brightness}
-          contrast={contrast}
-          disabled={!isReady || isLoading}
-          onBrightnessChange={setBrightness}
-          onContrastChange={setContrast}
-          onReset={helpers.resetAdjustments}
-          pageCount={pageCount || undefined}
-          currentPage={asset ? currentFrame : undefined}
-        />
+        <div className="branding">
+          <h1 className="branding__title">ViewSure Projection Studio</h1>
+          <p className="branding__tagline">投影前に、照度とコントラストをブラウザ上でシミュレートするツール</p>
+        </div>
+        <div className="control-panel__body">
+          <FileUploader
+            disabled={isLoading}
+            onFileSelected={handleFileSelected}
+            statusMessage={statusMessage}
+          />
+          <ProjectionControls
+            brightness={brightness}
+            contrast={contrast}
+            disabled={!isReady || isLoading}
+            onBrightnessChange={setBrightness}
+            onContrastChange={setContrast}
+            onReset={helpers.resetAdjustments}
+            pageCount={pageCount || undefined}
+            currentPage={asset ? currentFrame : undefined}
+          />
+        </div>
       </aside>
       <main className="viewport-container">
         <ProjectionViewport

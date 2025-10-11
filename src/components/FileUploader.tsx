@@ -71,6 +71,10 @@ const FileUploader = ({ disabled = false, statusMessage, onFileSelected }: FileU
 
   return (
     <section className="uploader">
+      <header className="uploader__header">
+        <h2 className="uploader__title">資料アップロード</h2>
+        <p className="uploader__subtitle">PDF / PPTX / 画像ファイル（PNG・JPEG・WEBP・HEIC）に対応</p>
+      </header>
       <div
         className={`drop-zone ${disabled ? 'is-disabled' : ''} ${isDragActive ? 'is-active' : ''}`}
         onDragOver={handleDragOver}
@@ -94,10 +98,13 @@ const FileUploader = ({ disabled = false, statusMessage, onFileSelected }: FileU
           onChange={handleChange}
           disabled={disabled}
         />
+        <span className="drop-zone__icon" aria-hidden="true">⬆︎</span>
         <p className="drop-zone__title">PDF または画像ファイルをドラッグ &amp; ドロップ</p>
-        <p className="drop-zone__subtitle">クリックしてファイル選択も可能です</p>
+        <p className="drop-zone__subtitle">クリックでファイルを選択 / 複数ページの資料は自動で読み込みます</p>
       </div>
-      {statusMessage && <p className="upload-status">{statusMessage}</p>}
+      <div className="upload-status" role="status" aria-live="polite">
+        {statusMessage ? <span>{statusMessage}</span> : <span>準備完了。ファイルを読み込んでください。</span>}
+      </div>
     </section>
   );
 };

@@ -44,7 +44,7 @@ const ProjectionViewport = ({
             disabled={!canGoPrev}
             aria-label="前のページへ"
           >
-            Prev
+            ‹
           </button>
           <button
             type="button"
@@ -53,7 +53,7 @@ const ProjectionViewport = ({
             disabled={!canGoNext}
             aria-label="次のページへ"
           >
-            Next
+            ›
           </button>
         </>
       )}

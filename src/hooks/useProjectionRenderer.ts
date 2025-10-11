@@ -178,6 +178,7 @@ export const useProjectionRenderer = () => {
   const toneMappingRef = useRef<ToneMappingExports | null>(null);
   const adjustmentsRef = useStableRef<AdjustmentPayload>({ brightness: 1, contrast: 1 });
   const lastInputRef = useRef<{ brightness: number; contrast: number }>({ brightness: 100, contrast: 0 });
+  const rafHandleRef = useRef<number | null>(null);
 
   const drawScene = useCallback(() => {
     const resources = resourcesRef.current;
@@ -217,6 +218,16 @@ export const useProjectionRenderer = () => {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }, [adjustmentsRef]);
 
+  const scheduleDraw = useCallback(() => {
+    if (rafHandleRef.current !== null) {
+      return;
+    }
+    rafHandleRef.current = window.requestAnimationFrame(() => {
+      rafHandleRef.current = null;
+      drawScene();
+    });
+  }, [drawScene]);
+
   const loadImage = useCallback(
     async (source: TexImageSource) => {
       const resources = resourcesRef.current;
@@ -247,7 +258,7 @@ export const useProjectionRenderer = () => {
       };
 
       setIsReady(true);
-      drawScene();
+      scheduleDraw();
 
       if (source instanceof ImageBitmap && typeof source.close === 'function') {
         try {
@@ -257,7 +268,7 @@ export const useProjectionRenderer = () => {
         }
       }
     },
-    [drawScene]
+    [scheduleDraw]
   );
 
   const updateAdjustments = useCallback(
@@ -270,9 +281,9 @@ export const useProjectionRenderer = () => {
         brightness: brightnessFactor,
         contrast: contrastFactor
       };
-      drawScene();
+      scheduleDraw();
     },
-    [adjustmentsRef, drawScene]
+    [adjustmentsRef, scheduleDraw]
   );
 
   const initializeWebGL = useCallback(
@@ -366,11 +377,15 @@ export const useProjectionRenderer = () => {
     }
 
     initializeWebGL(canvas);
-    const handleResize = () => drawScene();
+    const handleResize = () => scheduleDraw();
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (rafHandleRef.current !== null) {
+        cancelAnimationFrame(rafHandleRef.current);
+        rafHandleRef.current = null;
+      }
       const resources = resourcesRef.current;
       if (resources) {
         const { gl, program, positionBuffer, uvBuffer, texture } = resources;
@@ -381,7 +396,7 @@ export const useProjectionRenderer = () => {
       }
       resourcesRef.current = null;
     };
-  }, [drawScene, initializeWebGL]);
+  }, [initializeWebGL, scheduleDraw]);
 
   useEffect(() => {
     let disposed = false;
@@ -396,7 +411,7 @@ export const useProjectionRenderer = () => {
           brightness: exports.brightnessOffset(brightness),
           contrast: exports.contrastFactor(contrast)
         };
-        drawScene();
+        scheduleDraw();
       })
       .catch((error) => {
         console.error('WebAssembly モジュールの読み込みに失敗しました', error);
@@ -405,7 +420,7 @@ export const useProjectionRenderer = () => {
     return () => {
       disposed = true;
     };
-  }, [adjustmentsRef, drawScene]);
+  }, [adjustmentsRef, scheduleDraw]);
 
   return useMemo(
     () => ({

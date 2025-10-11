@@ -1,4 +1,4 @@
-import { renderPdfDocumentToCanvases } from './pdf';
+import { createPdfRenderer } from './pdf';
 import { renderPptxSlideToCanvas } from './ppt';
 
 const IMAGE_MIME_TYPES = new Set([
@@ -15,14 +15,6 @@ const HEIC_MIME_TYPES = new Set([
 ]);
 
 const createImageSourceFromBlob = async (blob: Blob): Promise<TexImageSource> => {
-  if ('createImageBitmap' in window) {
-    try {
-      return await createImageBitmap(blob);
-    } catch {
-      // fall back to HTMLImageElement
-    }
-  }
-
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const objectUrl = URL.createObjectURL(blob);
     const image = new Image();
@@ -57,19 +49,42 @@ const createHeicImageSource = async (file: File): Promise<TexImageSource> => {
   return createImageSourceFromBlob(converted);
 };
 
+const toReusableSource = (source: TexImageSource): TexImageSource => {
+  if (source instanceof ImageBitmap) {
+    const canvas = document.createElement('canvas');
+    canvas.width = source.width;
+    canvas.height = source.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      source.close();
+      throw new Error('画像の変換に失敗しました');
+    }
+    context.drawImage(source, 0, 0);
+    source.close();
+    return canvas;
+  }
+  return source;
+};
+
 export type ProjectionAsset = {
-  frames: TexImageSource[];
   type: 'pdf' | 'pptx' | 'image';
+  pageCount: number;
+  getFrame: (index: number) => Promise<TexImageSource>;
+  dispose?: () => void;
+  hasFrame?: (index: number) => boolean;
 };
 
 export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> => {
   const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   if (isPdf) {
     const buffer = await file.arrayBuffer();
-    const canvases = await renderPdfDocumentToCanvases(buffer, 1.5);
+    const renderer = await createPdfRenderer(buffer, 1.5);
     return {
-      frames: canvases,
-      type: 'pdf'
+      type: 'pdf',
+      pageCount: renderer.pageCount,
+      getFrame: async (index: number) => renderer.getPageCanvas(index),
+      dispose: () => renderer.dispose(),
+      hasFrame: (index: number) => renderer.hasFrame(index)
     };
   }
 
@@ -81,16 +96,20 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
     const buffer = await file.arrayBuffer();
     const canvas = await renderPptxSlideToCanvas(buffer, 1);
     return {
-      frames: [canvas],
-      type: 'pptx'
+      type: 'pptx',
+      pageCount: 1,
+      getFrame: async () => canvas,
+      hasFrame: () => true
     };
   }
 
   if (IMAGE_MIME_TYPES.has(file.type)) {
-    const source = await createImageSource(file);
+    const source = toReusableSource(await createImageSource(file));
     return {
-      frames: [source],
-      type: 'image'
+      type: 'image',
+      pageCount: 1,
+      getFrame: async () => source,
+      hasFrame: () => true
     };
   }
 
@@ -98,10 +117,12 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
     HEIC_MIME_TYPES.has(file.type) || /\.hei[cf]$/i.test(file.name);
 
   if (isHeic) {
-    const source = await createHeicImageSource(file);
+    const source = toReusableSource(await createHeicImageSource(file));
     return {
-      frames: [source],
-      type: 'image'
+      type: 'image',
+      pageCount: 1,
+      getFrame: async () => source,
+      hasFrame: () => true
     };
   }
 
