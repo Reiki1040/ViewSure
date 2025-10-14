@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import FileUploader from './components/FileUploader';
 import ProjectionControls from './components/ProjectionControls';
 import ProjectionViewport from './components/ProjectionViewport';
@@ -17,6 +17,7 @@ const App = () => {
   const { canvasRef, isReady, loadImage, updateAdjustments } = useProjectionRenderer();
   const [asset, setAsset] = useState<ProjectionAsset | null>(null);
   const [currentFrame, setCurrentFrame] = useState(1);
+  const latestAdjustmentsRef = useRef({ brightness: INITIAL_BRIGHTNESS, contrast: INITIAL_CONTRAST });
 
   const handleFileSelected = useCallback(async (file: File) => {
     setIsLoading(true);
@@ -46,6 +47,7 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    latestAdjustmentsRef.current = { brightness, contrast };
     updateAdjustments({ brightness, contrast });
   }, [brightness, contrast, updateAdjustments]);
 
@@ -71,7 +73,8 @@ const App = () => {
           return;
         }
         await loadImage(source);
-        updateAdjustments({ brightness, contrast });
+        const { brightness: targetBrightness, contrast: targetContrast } = latestAdjustmentsRef.current;
+        updateAdjustments({ brightness: targetBrightness, contrast: targetContrast });
       } catch (error) {
         console.error(error);
         if (!cancelled) {
@@ -89,7 +92,7 @@ const App = () => {
     return () => {
       cancelled = true;
     };
-  }, [asset, brightness, contrast, currentFrame, loadImage, updateAdjustments]);
+  }, [asset, currentFrame, loadImage, updateAdjustments]);
 
   const handlePageChange = useCallback(
     (page: number) => {
