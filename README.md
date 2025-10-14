@@ -5,13 +5,27 @@
 
 ## 特徴
 
-- **React + TypeScript + Vite** … 軽量な開発体験と型安全を両立。
-- **WebGL レンダラー** … 自作シェーダーで輝度とコントラストを調整。WASM モジュールで値変換を高速化。
-- **PDF マルチページ対応** … `pdfjs-dist` を利用し全ページを Canvas として描画、ビューポート左右のナビゲーションで切り替え。
-- **PowerPoint (`.pptx`)** … `pptx-preview`（CDN）を利用して SVG 化 → Canvas 変換。
-- **HEIC / HEIF** … `heic2any` で PNG に変換してからテクスチャ化。
+- **React + TypeScript + Vite** … UI と状態管理は React 18、厳格な型付けと DX を TypeScript 5、開発サーバーとビルドは Vite 5 が担当します。
+- **WebGL レンダラー** … 生 WebGL とカスタムシェーダーで輝度／コントラストを適用。描画ロジックは `useProjectionRenderer` フックで再利用可能に抽象化。
+- **WASM アシスト** … `src/wasm/tone_mapping.wasm` を WebAssembly として読み込み、スライダー値からシェーダー向け係数を計算。軽量なトーンマッピングを高速に実行。
+- **PDF マルチページ** … `pdfjs-dist` の legacy ビルドを使用し、必要になったページだけオンデマンドで Canvas に描画。ページ移動のたびにテクスチャを差し替えます。
+- **PowerPoint (`.pptx`)** … `pptx-preview` を CDN から動的ロードし、SVG → Canvas に変換して WebGL テクスチャ化。追加のバックエンドを持たない構成です。
+- **HEIC / HEIF** … `heic2any` でブラウザ内変換し、ImageBitmap もしくは Canvas として読み込んで投影。
 - **ドラッグ＆ドロップ** … PDF / PPTX / 画像ファイルを直接アップロード可能。
 - **暗所風 UI** … プロジェクタープレビューに合うダークトーンの UI。
+
+## 技術スタック（詳細）
+
+| 分類 | 採用技術 | 説明 |
+|------|----------|------|
+| フロントエンド | React 18 / TypeScript 5 | 関数コンポーネントとカスタムフックで UI と状態を構成。 |
+| 開発基盤 | Vite 5, @vitejs/plugin-react | 高速な HMR と ESBuild ベースのビルド。 |
+| PDF レンダリング | pdfjs-dist (legacy) | WebWorker 付きの pdf.js を Vite 互換の `?url` 形式で読込み。ページごとに Canvas を生成。 |
+| PPTX レンダリング | pptx-preview (CDN) | jsDelivr から動的 import。SVG 化したスライドを Canvas へ変換。 |
+| 画像変換 | heic2any | HEIC/HEIF → PNG 変換をブラウザ側で実行。 |
+| WebGL | 生 WebGL + カスタム GLSL | 頂点・フラグメントシェーダーで画像表示と補正。アスペクト比調整、UV 反転を実装。 |
+| WASM | `tone_mapping.wasm` | 明るさ／コントラスト係数の演算を Wasm で実行し、高頻度のスライダー操作に対応。 |
+| スタイル | CSS (ダークテーマ) | `src/styles.css` にてグラスモーフィズム寄りの UI を定義。 |
 
 ## 開発環境の前提
 
