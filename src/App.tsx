@@ -3,13 +3,20 @@ import FileUploader, { type FileUploaderHandle } from './components/FileUploader
 import ProjectionControls from './components/ProjectionControls';
 import ProjectionViewport from './components/ProjectionViewport';
 import TopMenuBar from './components/TopMenuBar';
+import LandingScreen from './components/LandingScreen';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
+import { useAuth } from './context/AuthContext';
 
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
 
-const App = () => {
+type ProjectionStudioAppProps = {
+  onBackToLanding?: () => void;
+};
+
+const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
+  const { user, signOut } = useAuth();
   const [brightness, setBrightness] = useState(INITIAL_BRIGHTNESS);
   const [contrast, setContrast] = useState(INITIAL_CONTRAST);
   const [statusMessage, setStatusMessage] = useState<string | null>('ファイルをアップロードしてください');
@@ -254,6 +261,11 @@ const App = () => {
     updateAdjustments
   ]);
 
+  const handleSignOut = useCallback(() => {
+    signOut();
+    onBackToLanding?.();
+  }, [onBackToLanding, signOut]);
+
   useEffect(() => {
     return () => {
       asset?.dispose?.();
@@ -263,6 +275,9 @@ const App = () => {
   return (
     <div className="app-root">
       <TopMenuBar
+        onBackToLanding={onBackToLanding}
+        onSignOut={user ? handleSignOut : undefined}
+        user={user ? { name: user.name, avatarUrl: user.picture } : undefined}
         onOpenFile={handleOpenFileDialog}
         onReset={resetAdjustments}
         onGoPrev={goToPrevious}
@@ -276,10 +291,7 @@ const App = () => {
       />
       <div className="app-shell">
         <aside className="control-panel">
-          <div className="branding">
-            <h1 className="branding__title">ViewSure Projection Studio</h1>
-            <p className="branding__tagline">投影前に、照度とコントラストをブラウザ上でシミュレートするツール</p>
-          </div>
+          <div className="branding" />
           <div className="control-panel__body">
             <FileUploader
               ref={fileUploaderRef}
@@ -313,6 +325,58 @@ const App = () => {
       </div>
     </div>
   );
+};
+
+const App = () => {
+  const [showLanding, setShowLanding] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    return window.location.hash !== '#app';
+  });
+  const hasLandingHistoryRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const handleHashChange = () => {
+      setShowLanding(window.location.hash !== '#app');
+      if (window.location.hash !== '#app') {
+        hasLandingHistoryRef.current = false;
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
+  const handleEnterApp = useCallback(() => {
+    if (typeof window !== 'undefined' && window.location.hash !== '#app') {
+      window.location.hash = 'app';
+      hasLandingHistoryRef.current = true;
+    }
+    setShowLanding(false);
+  }, []);
+
+  const handleBackToLanding = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#app' && hasLandingHistoryRef.current) {
+        window.history.back();
+      } else {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        hasLandingHistoryRef.current = false;
+      }
+    }
+    setShowLanding(true);
+  }, []);
+
+  if (showLanding) {
+    return <LandingScreen onStart={handleEnterApp} />;
+  }
+
+  return <ProjectionStudioApp onBackToLanding={handleBackToLanding} />;
 };
 
 export default App;

@@ -1,4 +1,10 @@
 type TopMenuBarProps = {
+  onBackToLanding?: () => void;
+  onSignOut?: () => void;
+  user?: {
+    name: string;
+    avatarUrl?: string;
+  };
   onOpenFile: () => void;
   onReset: () => void;
   onGoPrev: () => void;
@@ -12,6 +18,9 @@ type TopMenuBarProps = {
 };
 
 const TopMenuBar = ({
+  onBackToLanding,
+  onSignOut,
+  user,
   onOpenFile,
   onReset,
   onGoPrev,
@@ -30,6 +39,11 @@ const TopMenuBar = ({
         <span className="top-menu__product">Projection Studio</span>
       </div>
       <nav className="top-menu__actions" aria-label="主要操作">
+        {onBackToLanding ? (
+          <button type="button" className="top-menu__button top-menu__button--ghost" onClick={onBackToLanding}>
+            スタートに戻る
+          </button>
+        ) : null}
         <button
           type="button"
           className="top-menu__button top-menu__button--primary"
@@ -70,9 +84,28 @@ const TopMenuBar = ({
         >
           設定をリセット
         </button>
+        {onSignOut ? (
+          <button type="button" className="top-menu__button top-menu__button--ghost" onClick={onSignOut}>
+            サインアウト
+          </button>
+        ) : null}
       </nav>
       <div className="top-menu__status" role="status" aria-live="polite">
-        {statusMessage ?? '準備完了 — ファイルを読み込んでください'}
+        {user ? (
+          <div className="top-menu__user">
+            {user.avatarUrl ? (
+              <img className="top-menu__user-avatar" src={user.avatarUrl} alt={`${user.name} のアバター`} />
+            ) : (
+              <span className="top-menu__user-avatar top-menu__user-avatar--fallback" aria-hidden="true">
+                {user.name.slice(0, 1)}
+              </span>
+            )}
+            <span className="top-menu__user-name">{user.name}</span>
+          </div>
+        ) : null}
+        <span className="top-menu__status-text">
+          {statusMessage ?? '準備完了 — ファイルを読み込んでください'}
+        </span>
       </div>
     </header>
   );
