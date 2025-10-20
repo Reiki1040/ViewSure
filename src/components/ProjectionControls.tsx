@@ -61,7 +61,10 @@ const ProjectionControls = ({
         />
       </label>
       <button className="wcag-button" type="button" disabled={disabled}>
-        WCAG プリセット
+        WCAG 適合
+      </button>
+      <button className="preview-button" type="button" disabled={disabled}>
+        プロジェクタープレビュー
       </button>
       <button className="reset-button" onClick={onReset} disabled={disabled}>
         設定をリセット
