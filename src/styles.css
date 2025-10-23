@@ -631,6 +631,22 @@ a {
   z-index: 0;
 }
 
+.viewport__wcag-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.viewport__wcag-text {
+  position: absolute;
+  box-sizing: border-box;
+  color: inherit;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform-origin: center;
+  text-shadow: none;
+}
+
 .viewport__overlay {
   position: absolute;
   inset: 0;

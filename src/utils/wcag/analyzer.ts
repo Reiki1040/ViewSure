@@ -26,6 +26,8 @@ export type SlideTextNode = {
     width: number;
     height: number;
   };
+  textLuminance?: number;
+  backgroundLuminance?: number;
 };
 
 export type WcagIssue = {
@@ -238,17 +240,8 @@ export const analyzeProjectionAsset = async (asset: ProjectionAsset): Promise<Do
       }
     }
 
-    slides.push({
-      index,
-      width,
-      height,
-      aspectRatio: width / height,
-      averageLuminance,
-      textNodes
-    });
-
     if (textNodes && textNodes.length > 0) {
-      textNodes.forEach((node) => {
+      const enrichedNodes: SlideTextNode[] = textNodes.map((node) => {
         const headingMin = Math.max(28, height * 0.04);
         const bodyMin = Math.max(18, height * 0.028);
         const requiredFont = node.role === 'heading' ? headingMin : bodyMin;
@@ -275,6 +268,11 @@ export const analyzeProjectionAsset = async (asset: ProjectionAsset): Promise<Do
         };
         const textLum = sampleLuminanceInRect(context, node.bounds);
         const backgroundLum = sampleLuminanceInRect(context, backgroundRect, node.bounds);
+        const enrichedNode: SlideTextNode = {
+          ...node,
+          textLuminance: textLum || undefined,
+          backgroundLuminance: backgroundLum || undefined
+        };
         if (textLum > 0 && backgroundLum > 0) {
           const lighter = Math.max(textLum, backgroundLum);
           const darker = Math.min(textLum, backgroundLum);
@@ -291,8 +289,20 @@ export const analyzeProjectionAsset = async (asset: ProjectionAsset): Promise<Do
             });
           }
         }
+        return enrichedNode;
       });
+
+      textNodes = enrichedNodes;
     }
+
+    slides.push({
+      index,
+      width,
+      height,
+      aspectRatio: width / height,
+      averageLuminance,
+      textNodes
+    });
 
     if (source instanceof ImageBitmap) {
       try {

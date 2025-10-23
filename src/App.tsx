@@ -7,6 +7,7 @@ import LandingScreen from './components/LandingScreen';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
 import { analyzeProjectionAsset, type DocumentAnalysis } from './utils/wcag/analyzer';
+import { deriveAutoAdjustments, type WcagAdjustmentsMap } from './utils/wcag/adjustments';
 import { useAuth } from './context/AuthContext';
 
 const INITIAL_BRIGHTNESS = 100;
@@ -32,10 +33,12 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isWcagApplying, setIsWcagApplying] = useState(false);
+  const [wcagAdjustments, setWcagAdjustments] = useState<WcagAdjustmentsMap | null>(null);
 
   const handleFileSelected = useCallback(async (file: File) => {
     setIsLoading(true);
     setStatusMessage(null);
+    setWcagAdjustments(null);
 
     try {
       const projectionAsset = await loadProjectionAsset(file);
@@ -58,6 +61,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const resetAdjustments = useCallback(() => {
     setBrightness(INITIAL_BRIGHTNESS);
     setContrast(INITIAL_CONTRAST);
+    setWcagAdjustments(null);
   }, []);
 
   const handleOpenFileDialog = useCallback(() => {
@@ -318,6 +322,12 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   }, [analysis]);
 
   useEffect(() => {
+    if (!analysis) {
+      setWcagAdjustments(null);
+    }
+  }, [analysis]);
+
+  useEffect(() => {
     if (analysisError) {
       console.warn('WCAG analysis warning:', analysisError);
     }
@@ -365,9 +375,16 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
 
       setBrightness(targetBrightness);
       setContrast(targetContrast);
+      const adjustments = deriveAutoAdjustments(analysis);
+      setWcagAdjustments(adjustments);
 
       const fontIssues = analysis.issues.filter((issue) => issue.rule === 'font-size').length;
       const contrastIssues = analysis.issues.filter((issue) => issue.rule === 'contrast').length;
+      const textAdjustmentCount = Object.values(adjustments).reduce(
+        (acc, slideAdjustments) => acc + slideAdjustments.nodes.length,
+        0
+      );
+      const adjustedSlideCount = Object.keys(adjustments).length;
 
       const issueSummary =
         analysis.issues.length === 0
@@ -378,16 +395,20 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             ]
               .filter(Boolean)
               .join(' / ');
+      const textSummary =
+        textAdjustmentCount > 0
+          ? `テキストを ${adjustedSlideCount} ページで ${textAdjustmentCount} 箇所調整`
+          : 'テキスト調整対象は見つかりませんでした';
 
       setStatusMessage(
-        `WCAG ガイドラインに沿い明るさを ${targetBrightness}%、コントラストを ${targetContrast}% に調整しました（${issueSummary}）。`
+        `WCAG ガイドラインに沿い明るさを ${targetBrightness}%、コントラストを ${targetContrast}% に調整し、${textSummary}（${issueSummary}）。`
       );
     } finally {
       setTimeout(() => {
         setIsWcagApplying(false);
       }, 200);
     }
-  }, [analysis, asset, brightness, clamp, contrast, isWcagApplying]);
+  }, [analysis, asset, brightness, clamp, contrast, isWcagApplying, setWcagAdjustments]);
 
   return (
     <div className="app-root">
@@ -439,6 +460,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             canGoNext={canGoNext}
             onGoPrev={goToPrevious}
             onGoNext={goToNext}
+            wcagAdjustments={wcagAdjustments ? wcagAdjustments[currentFrame - 1] ?? null : null}
           />
         </main>
       </div>
