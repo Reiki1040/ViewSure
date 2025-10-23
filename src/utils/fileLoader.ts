@@ -1,4 +1,4 @@
-import { createPdfRenderer } from './pdf';
+import { createPdfRenderer, type PdfPageTextContent } from './pdf';
 import { renderPptxSlideToCanvas } from './ppt';
 
 const IMAGE_MIME_TYPES = new Set([
@@ -66,12 +66,15 @@ const toReusableSource = (source: TexImageSource): TexImageSource => {
   return source;
 };
 
+export type SlideTextContent = PdfPageTextContent;
+
 export type ProjectionAsset = {
   type: 'pdf' | 'pptx' | 'image';
   pageCount: number;
   getFrame: (index: number) => Promise<TexImageSource>;
   dispose?: () => void;
   hasFrame?: (index: number) => boolean;
+  getTextContent?: (index: number) => Promise<SlideTextContent | null>;
 };
 
 export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> => {
@@ -84,7 +87,8 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       pageCount: renderer.pageCount,
       getFrame: async (index: number) => renderer.getPageCanvas(index),
       dispose: () => renderer.dispose(),
-      hasFrame: (index: number) => renderer.hasFrame(index)
+      hasFrame: (index: number) => renderer.hasFrame(index),
+      getTextContent: async (index: number) => renderer.getPageTextContent(index)
     };
   }
 
@@ -99,7 +103,8 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       type: 'pptx',
       pageCount: 1,
       getFrame: async () => canvas,
-      hasFrame: () => true
+      hasFrame: () => true,
+      getTextContent: async () => null
     };
   }
 
@@ -109,7 +114,8 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       type: 'image',
       pageCount: 1,
       getFrame: async () => source,
-      hasFrame: () => true
+      hasFrame: () => true,
+      getTextContent: async () => null
     };
   }
 
@@ -122,7 +128,8 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       type: 'image',
       pageCount: 1,
       getFrame: async () => source,
-      hasFrame: () => true
+      hasFrame: () => true,
+      getTextContent: async () => null
     };
   }
 
