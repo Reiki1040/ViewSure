@@ -35,23 +35,90 @@ body {
   gap: 24px;
 }
 
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 150% at 50% 0%, rgba(70, 92, 180, 0.18), transparent 60%),
+    rgba(5, 8, 18, 0.85);
+  backdrop-filter: blur(14px);
+  z-index: 999;
+  animation: transition-overlay-fade 0.4s ease forwards;
+}
+
+.transition-overlay__spinner {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid rgba(140, 168, 255, 0.28);
+  border-top-color: rgba(140, 168, 255, 0.88);
+  animation: transition-overlay-spin 0.9s linear infinite;
+  box-shadow: 0 12px 32px rgba(60, 92, 200, 0.32);
+}
+
+.transition-overlay__message {
+  margin-top: 18px;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(224, 232, 255, 0.85);
+}
+
+.app-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(50, 72, 140, 0.18), transparent 58%),
+    rgba(5, 8, 18, 0.78);
+  backdrop-filter: blur(10px);
+  z-index: 998;
+}
+
+.app-overlay__message {
+  margin-top: 16px;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(218, 226, 255, 0.85);
+}
+
+@keyframes transition-overlay-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes transition-overlay-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .top-menu {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
-  padding: 18px clamp(24px, 5vw, 64px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(155deg, rgba(17, 21, 34, 0.9), rgba(9, 11, 20, 0.82)),
-    rgba(10, 12, 24, 0.85);
-  backdrop-filter: blur(18px);
-  box-shadow:
-    0 18px 42px rgba(5, 8, 18, 0.48),
-    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-  border-radius: 24px;
-  margin: clamp(16px, 4vw, 32px) clamp(24px, 5vw, 64px) 0;
+  padding: 24px clamp(32px, 5.5vw, 88px) 18px;
+  background: transparent;
+  border-bottom: 1px solid rgba(118, 138, 220, 0.16);
+  position: relative;
+  margin: 0;
 }
 
 .top-menu__branding {
@@ -704,6 +771,7 @@ a {
   flex-direction: column;
   align-items: center;
   padding: clamp(24px, 5vw, 64px);
+  padding-top: calc(clamp(24px, 5vw, 64px) + 90px);
   background:
     radial-gradient(120% 140% at 10% -10%, rgba(86, 121, 255, 0.32) 0%, transparent 55%),
     radial-gradient(120% 120% at 90% 0%, rgba(132, 78, 255, 0.28) 0%, transparent 62%),
@@ -712,19 +780,21 @@ a {
 }
 
 .landing__header {
-  width: min(1080px, 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 90px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 18px clamp(16px, 4vw, 32px);
-  background: linear-gradient(150deg, rgba(15, 20, 38, 0.92), rgba(10, 13, 28, 0.88));
-  border: 1px solid rgba(120, 150, 255, 0.18);
-  box-shadow:
-    0 24px 48px rgba(7, 10, 24, 0.5),
-    0 0 0 1px rgba(200, 220, 255, 0.05) inset;
-  border-radius: 22px;
-  backdrop-filter: blur(18px);
+  padding: 18px clamp(24px, 6vw, 80px);
+  background: linear-gradient(135deg, rgba(10, 14, 24, 0.92), rgba(12, 16, 32, 0.85));
+  border-bottom: 1px solid rgba(110, 140, 220, 0.18);
+  box-shadow: 0 18px 42px rgba(4, 6, 16, 0.5);
+  backdrop-filter: blur(14px);
+  z-index: 10;
 }
 
 .landing__brand {
@@ -887,6 +957,12 @@ a {
     flex-wrap: wrap;
     justify-content: center;
     gap: 18px;
+    height: auto;
+    padding: 16px clamp(18px, 6vw, 40px);
+  }
+
+  .landing {
+    padding-top: calc(clamp(24px, 6vw, 48px) + 120px);
   }
 
   .landing__header-cta {
@@ -897,6 +973,7 @@ a {
 @media (max-width: 640px) {
   .landing {
     padding: 24px clamp(16px, 8vw, 24px) 48px;
+    padding-top: calc(24px + 120px);
   }
 
   .landing__nav {

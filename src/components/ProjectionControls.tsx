@@ -7,6 +7,8 @@ type ProjectionControlsProps = {
   onReset: () => void;
   pageCount?: number;
   currentPage?: number;
+  onRequestWcagCheck?: () => void;
+  wcagDisabled?: boolean;
 };
 
 const ProjectionControls = ({
@@ -17,7 +19,9 @@ const ProjectionControls = ({
   onContrastChange,
   onReset,
   pageCount,
-  currentPage
+  currentPage,
+  onRequestWcagCheck,
+  wcagDisabled = false
 }: ProjectionControlsProps) => {
   const showPageIndicator = !!pageCount && !!currentPage;
 
@@ -60,7 +64,12 @@ const ProjectionControls = ({
           disabled={disabled}
         />
       </label>
-      <button className="wcag-button" type="button" disabled={disabled}>
+      <button
+        className="wcag-button"
+        type="button"
+        disabled={disabled || wcagDisabled}
+        onClick={onRequestWcagCheck}
+      >
         WCAG 適合
       </button>
       <button className="preview-button" type="button" disabled={disabled}>

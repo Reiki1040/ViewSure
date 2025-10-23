@@ -6,6 +6,7 @@ import TopMenuBar from './components/TopMenuBar';
 import LandingScreen from './components/LandingScreen';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
+import { analyzeProjectionAsset, type DocumentAnalysis } from './utils/wcag/analyzer';
 import { useAuth } from './context/AuthContext';
 
 const INITIAL_BRIGHTNESS = 100;
@@ -28,6 +29,9 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const latestAdjustmentsRef = useRef({ brightness: INITIAL_BRIGHTNESS, contrast: INITIAL_CONTRAST });
   const fileUploaderRef = useRef<FileUploaderHandle | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isWcagApplying, setIsWcagApplying] = useState(false);
 
   const handleFileSelected = useCallback(async (file: File) => {
     setIsLoading(true);
@@ -272,6 +276,119 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     };
   }, [asset]);
 
+  useEffect(() => {
+    if (!asset) {
+      setAnalysis(null);
+      setAnalysisError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setAnalysis(null);
+    setAnalysisError(null);
+    setIsWcagApplying(false);
+    analyzeProjectionAsset(asset)
+      .then((result) => {
+        if (!cancelled) {
+          setAnalysis(result);
+          const issueCount = result.issues.length;
+          if (issueCount > 0) {
+            setStatusMessage(`WCAG 解析: ${issueCount} 件の改善候補が見つかりました`);
+          } else {
+            setStatusMessage('WCAG 解析: 主要な問題は検出されませんでした');
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('WCAG 解析に失敗しました', error);
+        if (!cancelled) {
+          setAnalysisError(error instanceof Error ? error.message : 'WCAG 解析に失敗しました');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [asset]);
+
+  useEffect(() => {
+    if (analysis) {
+      console.debug('WCAG analysis result', analysis);
+    }
+  }, [analysis]);
+
+  useEffect(() => {
+    if (analysisError) {
+      console.warn('WCAG analysis warning:', analysisError);
+    }
+  }, [analysisError]);
+
+  const clamp = useCallback((value: number, min: number, max: number) => Math.min(Math.max(value, min), max), []);
+
+  const handleApplyWcag = useCallback(() => {
+    if (!asset) {
+      setStatusMessage('まず資料を読み込んでください');
+      return;
+    }
+    if (!analysis) {
+      setStatusMessage('WCAG 解析結果を準備中です…');
+      return;
+    }
+    if (isWcagApplying) {
+      return;
+    }
+
+    setIsWcagApplying(true);
+    try {
+      const luminanceAverage =
+        analysis.slides.reduce((acc, slide) => acc + slide.averageLuminance, 0) /
+        Math.max(analysis.slides.length, 1);
+
+      let targetBrightness = brightness;
+      if (Number.isFinite(luminanceAverage)) {
+        if (luminanceAverage < 0.45) {
+          targetBrightness = clamp(Math.round(100 + (0.45 - luminanceAverage) * 160), 110, 145);
+        } else if (luminanceAverage > 0.75) {
+          targetBrightness = clamp(Math.round(100 - (luminanceAverage - 0.75) * 160), 70, 95);
+        }
+      }
+
+      const hasContrastIssue = analysis.issues.some((issue) => issue.rule === 'contrast');
+      const severeContrastIssue = analysis.issues.some(
+        (issue) => issue.rule === 'contrast' && issue.severity === 'error'
+      );
+
+      let targetContrast = contrast;
+      if (hasContrastIssue) {
+        targetContrast = Math.max(contrast, severeContrastIssue ? 20 : 12);
+      }
+
+      setBrightness(targetBrightness);
+      setContrast(targetContrast);
+
+      const fontIssues = analysis.issues.filter((issue) => issue.rule === 'font-size').length;
+      const contrastIssues = analysis.issues.filter((issue) => issue.rule === 'contrast').length;
+
+      const issueSummary =
+        analysis.issues.length === 0
+          ? '主要な課題はありませんでした'
+          : [
+              contrastIssues > 0 ? `コントラスト ${contrastIssues} 件` : null,
+              fontIssues > 0 ? `文字サイズ ${fontIssues} 件` : null
+            ]
+              .filter(Boolean)
+              .join(' / ');
+
+      setStatusMessage(
+        `WCAG ガイドラインに沿い明るさを ${targetBrightness}%、コントラストを ${targetContrast}% に調整しました（${issueSummary}）。`
+      );
+    } finally {
+      setTimeout(() => {
+        setIsWcagApplying(false);
+      }, 200);
+    }
+  }, [analysis, asset, brightness, clamp, contrast, isWcagApplying]);
+
   return (
     <div className="app-root">
       <TopMenuBar
@@ -308,6 +425,8 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
               onReset={resetAdjustments}
               pageCount={pageCount || undefined}
               currentPage={asset ? currentFrame : undefined}
+              onRequestWcagCheck={handleApplyWcag}
+              wcagDisabled={!analysis || isWcagApplying || isLoading || isExporting}
             />
           </div>
         </aside>
@@ -323,6 +442,12 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
           />
         </main>
       </div>
+      {isExporting ? (
+        <div className="app-overlay" role="status" aria-live="assertive">
+          <div className="transition-overlay__spinner" aria-hidden="true" />
+          <p className="app-overlay__message">PDF を保存しています...</p>
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -335,6 +460,8 @@ const App = () => {
     return window.location.hash !== '#app';
   });
   const hasLandingHistoryRef = useRef(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -344,6 +471,7 @@ const App = () => {
       setShowLanding(window.location.hash !== '#app');
       if (window.location.hash !== '#app') {
         hasLandingHistoryRef.current = false;
+        setIsTransitioning(false);
       }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -352,13 +480,37 @@ const App = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!showLanding) {
+      const timer = window.setTimeout(() => {
+        setIsTransitioning(false);
+      }, 500);
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+    setIsTransitioning(false);
+    return undefined;
+  }, [showLanding]);
+
   const handleEnterApp = useCallback(() => {
+    if (isTransitioning) {
+      return;
+    }
+    setIsTransitioning(true);
     if (typeof window !== 'undefined' && window.location.hash !== '#app') {
       window.location.hash = 'app';
       hasLandingHistoryRef.current = true;
     }
-    setShowLanding(false);
-  }, []);
+    if (transitionTimeoutRef.current !== null) {
+      window.clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      setShowLanding(false);
+      transitionTimeoutRef.current = null;
+    }, 250);
+  }, [isTransitioning]);
 
   const handleBackToLanding = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -369,14 +521,33 @@ const App = () => {
         hasLandingHistoryRef.current = false;
       }
     }
+    setIsTransitioning(false);
     setShowLanding(true);
   }, []);
 
-  if (showLanding) {
-    return <LandingScreen onStart={handleEnterApp} />;
-  }
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  return <ProjectionStudioApp onBackToLanding={handleBackToLanding} />;
+  return (
+    <>
+      {showLanding ? (
+        <LandingScreen onStart={handleEnterApp} />
+      ) : (
+        <ProjectionStudioApp onBackToLanding={handleBackToLanding} />
+      )}
+      {isTransitioning ? (
+        <div className="transition-overlay" role="status" aria-live="polite">
+          <div className="transition-overlay__spinner" aria-hidden="true" />
+          <p className="transition-overlay__message">ViewSure を起動しています...</p>
+        </div>
+      ) : null}
+    </>
+  );
 };
 
 export default App;
