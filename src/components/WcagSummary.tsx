@@ -1,4 +1,5 @@
 import type { DocumentAnalysis, WcagIssue } from '../utils/wcag/analyzer';
+import LoadingSpinner from './LoadingSpinner';
 
 type WcagSummaryProps = {
   analysis: DocumentAnalysis | null;
@@ -34,9 +35,9 @@ const WcagSummary = ({ analysis, isAnalyzing, error, onFocusSlide, fontAdjustmen
 
   if (isAnalyzing) {
     return (
-      <section className="wcag-summary">
+      <section className="wcag-summary wcag-summary--loading">
         <h3>WCAG 解析</h3>
-        <p>解析中です…</p>
+        <LoadingSpinner size="small" message="解析中です..." />
       </section>
     );
   }

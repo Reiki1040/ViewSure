@@ -37,6 +37,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     isApplying,
     fontAdjustments,
     applyAdjustments,
+    clearAdjustments,
     getTextOverlayPayload
   } = useWcagHelper({
     asset,
@@ -153,6 +154,9 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const canGoPrev = pageCount > 1 && currentFrame > 1;
   const canGoNext = pageCount > 1 && currentFrame < pageCount;
   const canDownload = Boolean(asset) && isReady && !isLoading && !isExporting;
+  const hasWcagAdjustments = Boolean(fontAdjustments);
+  const wcagProcessing = isApplying || isAnalyzing;
+  const wcagProcessingMessage = isApplying ? '適用中...' : isAnalyzing ? '解析中...' : undefined;
 
   const goToPrevious = useCallback(() => {
     if (canGoPrev) {
@@ -328,6 +332,11 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
               currentPage={asset ? currentFrame : undefined}
               onRequestWcagCheck={applyAdjustments}
               wcagDisabled={!analysis || isApplying || isLoading || isExporting}
+              onClearWcagAdjustments={clearAdjustments}
+              showWcagClearButton={hasWcagAdjustments}
+              wcagClearDisabled={isApplying || isLoading || isExporting}
+              wcagProcessing={wcagProcessing}
+              wcagProcessingMessage={wcagProcessingMessage}
             />
             <WcagSummary
               analysis={analysis}

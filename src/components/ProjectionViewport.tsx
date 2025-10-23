@@ -1,5 +1,6 @@
 import { RefObject, useEffect, useRef } from 'react';
 import type { SlideTextNode } from '../utils/wcag/analyzer';
+import LoadingSpinner from './LoadingSpinner';
 
 type TextOverlayPayload = {
   nodes: SlideTextNode[];
@@ -124,8 +125,12 @@ const ProjectionViewport = ({
       )}
       {showOverlay && (
         <div className="viewport__overlay">
-          {!isReady && <p>プレビュー画像を読み込んでください</p>}
-          {isLoading && <p>読み込み中...</p>}
+          {!isReady && !isLoading ? (
+            <p>プレビュー画像を読み込んでください</p>
+          ) : null}
+          {isLoading ? (
+            <LoadingSpinner className="viewport__overlay-spinner" message="読み込み中です..." />
+          ) : null}
         </div>
       )}
     </div>
