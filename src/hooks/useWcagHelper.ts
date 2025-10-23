@@ -41,6 +41,7 @@ export const useWcagHelper = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [fontAdjustments, setFontAdjustments] = useState<FontAdjustments | null>(null);
+  const [previousAdjustments, setPreviousAdjustments] = useState<{ brightness: number; contrast: number } | null>(null);
 
   useEffect(() => {
     if (!asset) {
@@ -49,6 +50,7 @@ export const useWcagHelper = ({
       setIsAnalyzing(false);
       setIsApplying(false);
       setFontAdjustments(null);
+      setPreviousAdjustments(null);
       return;
     }
 
@@ -56,6 +58,7 @@ export const useWcagHelper = ({
     setAnalysis(null);
     setAnalysisError(null);
     setFontAdjustments(null);
+    setPreviousAdjustments(null);
     setIsAnalyzing(true);
 
     analyzeProjectionAsset(asset)
@@ -104,6 +107,7 @@ export const useWcagHelper = ({
 
     setIsApplying(true);
     try {
+      setPreviousAdjustments({ brightness, contrast });
       const luminanceAverage =
         analysis.slides.reduce((acc, slide) => acc + slide.averageLuminance, 0) /
         Math.max(analysis.slides.length, 1);
@@ -161,6 +165,19 @@ export const useWcagHelper = ({
     }
   }, [analysis, asset, brightness, contrast, isApplying, setBrightness, setContrast, setStatusMessage]);
 
+  const clearAdjustments = useCallback(() => {
+    if (!fontAdjustments) {
+      return;
+    }
+    if (previousAdjustments) {
+      setBrightness(previousAdjustments.brightness);
+      setContrast(previousAdjustments.contrast);
+    }
+    setFontAdjustments(null);
+    setPreviousAdjustments(null);
+    setStatusMessage('WCAG による調整を解除しました');
+  }, [fontAdjustments, previousAdjustments, setBrightness, setContrast, setStatusMessage]);
+
   const getTextOverlayPayload = useCallback(
     (pageIndex: number): TextOverlayPayload | null => {
       if (!analysis || !fontAdjustments) {
@@ -190,6 +207,7 @@ export const useWcagHelper = ({
     isApplying,
     fontAdjustments: summaryAdjustments,
     applyAdjustments,
+    clearAdjustments,
     getTextOverlayPayload
   };
 };
