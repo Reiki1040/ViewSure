@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FileUploader, { type FileUploaderHandle } from './components/FileUploader';
 import ProjectionControls from './components/ProjectionControls';
+import WcagSummary from './components/WcagSummary';
 import ProjectionViewport from './components/ProjectionViewport';
 import TopMenuBar from './components/TopMenuBar';
 import LandingScreen from './components/LandingScreen';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
-import { analyzeProjectionAsset, type DocumentAnalysis } from './utils/wcag/analyzer';
 import { useAuth } from './context/AuthContext';
+import { useWcagHelper } from './hooks/useWcagHelper';
 
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
@@ -29,9 +30,22 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const latestAdjustmentsRef = useRef({ brightness: INITIAL_BRIGHTNESS, contrast: INITIAL_CONTRAST });
   const fileUploaderRef = useRef<FileUploaderHandle | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [isWcagApplying, setIsWcagApplying] = useState(false);
+  const {
+    analysis,
+    analysisError,
+    isAnalyzing,
+    isApplying,
+    fontAdjustments,
+    applyAdjustments,
+    getTextOverlayPayload
+  } = useWcagHelper({
+    asset,
+    brightness,
+    contrast,
+    setBrightness,
+    setContrast,
+    setStatusMessage
+  });
 
   const handleFileSelected = useCallback(async (file: File) => {
     setIsLoading(true);
@@ -276,119 +290,6 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     };
   }, [asset]);
 
-  useEffect(() => {
-    if (!asset) {
-      setAnalysis(null);
-      setAnalysisError(null);
-      return;
-    }
-
-    let cancelled = false;
-    setAnalysis(null);
-    setAnalysisError(null);
-    setIsWcagApplying(false);
-    analyzeProjectionAsset(asset)
-      .then((result) => {
-        if (!cancelled) {
-          setAnalysis(result);
-          const issueCount = result.issues.length;
-          if (issueCount > 0) {
-            setStatusMessage(`WCAG 解析: ${issueCount} 件の改善候補が見つかりました`);
-          } else {
-            setStatusMessage('WCAG 解析: 主要な問題は検出されませんでした');
-          }
-        }
-      })
-      .catch((error) => {
-        console.error('WCAG 解析に失敗しました', error);
-        if (!cancelled) {
-          setAnalysisError(error instanceof Error ? error.message : 'WCAG 解析に失敗しました');
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [asset]);
-
-  useEffect(() => {
-    if (analysis) {
-      console.debug('WCAG analysis result', analysis);
-    }
-  }, [analysis]);
-
-  useEffect(() => {
-    if (analysisError) {
-      console.warn('WCAG analysis warning:', analysisError);
-    }
-  }, [analysisError]);
-
-  const clamp = useCallback((value: number, min: number, max: number) => Math.min(Math.max(value, min), max), []);
-
-  const handleApplyWcag = useCallback(() => {
-    if (!asset) {
-      setStatusMessage('まず資料を読み込んでください');
-      return;
-    }
-    if (!analysis) {
-      setStatusMessage('WCAG 解析結果を準備中です…');
-      return;
-    }
-    if (isWcagApplying) {
-      return;
-    }
-
-    setIsWcagApplying(true);
-    try {
-      const luminanceAverage =
-        analysis.slides.reduce((acc, slide) => acc + slide.averageLuminance, 0) /
-        Math.max(analysis.slides.length, 1);
-
-      let targetBrightness = brightness;
-      if (Number.isFinite(luminanceAverage)) {
-        if (luminanceAverage < 0.45) {
-          targetBrightness = clamp(Math.round(100 + (0.45 - luminanceAverage) * 160), 110, 145);
-        } else if (luminanceAverage > 0.75) {
-          targetBrightness = clamp(Math.round(100 - (luminanceAverage - 0.75) * 160), 70, 95);
-        }
-      }
-
-      const hasContrastIssue = analysis.issues.some((issue) => issue.rule === 'contrast');
-      const severeContrastIssue = analysis.issues.some(
-        (issue) => issue.rule === 'contrast' && issue.severity === 'error'
-      );
-
-      let targetContrast = contrast;
-      if (hasContrastIssue) {
-        targetContrast = Math.max(contrast, severeContrastIssue ? 20 : 12);
-      }
-
-      setBrightness(targetBrightness);
-      setContrast(targetContrast);
-
-      const fontIssues = analysis.issues.filter((issue) => issue.rule === 'font-size').length;
-      const contrastIssues = analysis.issues.filter((issue) => issue.rule === 'contrast').length;
-
-      const issueSummary =
-        analysis.issues.length === 0
-          ? '主要な課題はありませんでした'
-          : [
-              contrastIssues > 0 ? `コントラスト ${contrastIssues} 件` : null,
-              fontIssues > 0 ? `文字サイズ ${fontIssues} 件` : null
-            ]
-              .filter(Boolean)
-              .join(' / ');
-
-      setStatusMessage(
-        `WCAG ガイドラインに沿い明るさを ${targetBrightness}%、コントラストを ${targetContrast}% に調整しました（${issueSummary}）。`
-      );
-    } finally {
-      setTimeout(() => {
-        setIsWcagApplying(false);
-      }, 200);
-    }
-  }, [analysis, asset, brightness, clamp, contrast, isWcagApplying]);
-
   return (
     <div className="app-root">
       <TopMenuBar
@@ -404,7 +305,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
         canGoPrev={canGoPrev}
         canGoNext={canGoNext}
         canDownload={canDownload}
-        isBusy={isLoading || isExporting}
+        isBusy={isLoading || isExporting || isApplying}
       />
       <div className="app-shell">
         <aside className="control-panel">
@@ -419,14 +320,26 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             <ProjectionControls
               brightness={brightness}
               contrast={contrast}
-              disabled={!isReady || isLoading || isExporting}
+              disabled={!isReady || isLoading || isExporting || isApplying}
               onBrightnessChange={setBrightness}
               onContrastChange={setContrast}
               onReset={resetAdjustments}
               pageCount={pageCount || undefined}
               currentPage={asset ? currentFrame : undefined}
-              onRequestWcagCheck={handleApplyWcag}
-              wcagDisabled={!analysis || isWcagApplying || isLoading || isExporting}
+              onRequestWcagCheck={applyAdjustments}
+              wcagDisabled={!analysis || isApplying || isLoading || isExporting}
+            />
+            <WcagSummary
+              analysis={analysis}
+              isAnalyzing={isAnalyzing}
+              error={analysisError}
+              fontAdjustments={fontAdjustments}
+              onFocusSlide={(page) => {
+                if (!asset) {
+                  return;
+                }
+                setCurrentFrame(page);
+              }}
             />
           </div>
         </aside>
@@ -439,13 +352,16 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             canGoNext={canGoNext}
             onGoPrev={goToPrevious}
             onGoNext={goToNext}
+            textOverlay={getTextOverlayPayload(currentFrame - 1)}
           />
         </main>
       </div>
-      {isExporting ? (
+      {isExporting || isApplying ? (
         <div className="app-overlay" role="status" aria-live="assertive">
           <div className="transition-overlay__spinner" aria-hidden="true" />
-          <p className="app-overlay__message">PDF を保存しています...</p>
+          <p className="app-overlay__message">
+            {isApplying ? 'WCAG 調整を適用しています...' : 'PDF を保存しています...'}
+          </p>
         </div>
       ) : null}
     </div>
