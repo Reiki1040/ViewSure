@@ -1,4 +1,11 @@
 import type { ProjectionAsset, SlideTextContent } from '../fileLoader';
+import type {
+  SlideTextModel,
+  TextNodeAdjustments,
+  TextNodeComputedStyle,
+  TextNodeModel,
+  TextRenderingModel
+} from '../../types/textModel';
 
 export type SlideMetrics = {
   index: number;
@@ -313,4 +320,123 @@ export const analyzeProjectionAsset = async (asset: ProjectionAsset): Promise<Do
     slides,
     issues
   };
+};
+
+const hashString = (input: string) => {
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
+
+const buildNodeId = (slideIndex: number, nodeIndex: number, node: SlideTextNode) => {
+  const signature = [
+    slideIndex,
+    nodeIndex,
+    node.text,
+    node.fontSize.toFixed(2),
+    node.bounds.x.toFixed(2),
+    node.bounds.y.toFixed(2),
+    node.bounds.width.toFixed(2),
+    node.bounds.height.toFixed(2)
+  ].join(':');
+  return `node-${hashString(signature)}`;
+};
+
+const mergeComputedStyle = (
+  baselineFontSize: number,
+  adjustments: TextNodeAdjustments
+): TextNodeComputedStyle => {
+  const scale = adjustments.scale ?? 1;
+  const base = Math.max(baselineFontSize, 1);
+  const fontSize = Math.max(adjustments.absoluteFontSize ?? base * scale, 1);
+  return {
+    fontSize,
+    fontFamily: adjustments.fontFamily,
+    fontWeight: adjustments.fontWeight,
+    color: adjustments.color,
+    background: adjustments.background,
+    letterSpacing: adjustments.letterSpacing
+  };
+};
+
+export const createTextRenderingModel = (analysis: DocumentAnalysis): TextRenderingModel => {
+  const issueLookup = new Map<
+    string,
+    {
+      contrastRatio?: number;
+      violations: Set<'contrast' | 'font-size'>;
+    }
+  >();
+
+  analysis.issues.forEach((issue) => {
+    if (!issue.nodeText) {
+      return;
+    }
+    const fontSizeKey = typeof issue.fontSize === 'number' ? issue.fontSize.toFixed(2) : 'unknown';
+    const key = `${issue.slideIndex}:${issue.nodeText}:${fontSizeKey}`;
+    const bucket = issueLookup.get(key) ?? {
+      contrastRatio: undefined,
+      violations: new Set<'contrast' | 'font-size'>()
+    };
+    if (issue.rule === 'contrast' && typeof issue.contrastRatio === 'number') {
+      bucket.contrastRatio = issue.contrastRatio;
+      bucket.violations.add('contrast');
+    }
+    if (issue.rule === 'font-size') {
+      bucket.violations.add('font-size');
+    }
+    issueLookup.set(key, bucket);
+  });
+
+  const slides: SlideTextModel[] = analysis.slides.map((slide) => {
+    const nodes: TextNodeModel[] =
+      slide.textNodes?.map((node, nodeIndex) => {
+        const nodeId = buildNodeId(slide.index, nodeIndex, node);
+        const baselineStyle = {
+          fontSize: node.fontSize
+        };
+        const adjustments: TextNodeAdjustments = {};
+        const computedStyle = mergeComputedStyle(node.fontSize, adjustments);
+
+        const fontSizeKey = node.fontSize.toFixed(2);
+        const issueKey = `${slide.index}:${node.text}:${fontSizeKey}`;
+        const issueInfo = issueLookup.get(issueKey);
+
+        return {
+          slideId: slide.index,
+          nodeId,
+          content: node.text,
+          role: node.role,
+          layout: {
+            bounds: {
+              x: node.bounds.x,
+              y: node.bounds.y,
+              width: node.bounds.width,
+              height: node.bounds.height
+            }
+          },
+          baselineStyle,
+          adjustments,
+          computedStyle,
+          meta: issueInfo
+            ? {
+                contrastRatio: issueInfo.contrastRatio,
+                wcagViolations: Array.from(issueInfo.violations)
+              }
+            : undefined
+        };
+      }) ?? [];
+
+    return {
+      slideId: slide.index,
+      baseWidth: slide.width,
+      baseHeight: slide.height,
+      nodes
+    };
+  });
+
+  return { slides };
 };
