@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef } from 'react';
+import { RefObject, useCallback, useEffect, useRef, type CSSProperties } from 'react';
 import type { TextOverlayPayload } from '../hooks/useWcagHelper';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -10,6 +10,7 @@ type ProjectionViewportProps = {
   canGoNext?: boolean;
   onGoPrev?: () => void;
   onGoNext?: () => void;
+  aspectRatio?: number | null;
   textOverlay?: TextOverlayPayload | null;
 };
 
@@ -21,11 +22,13 @@ const ProjectionViewport = ({
   canGoNext = false,
   onGoPrev,
   onGoNext,
+  aspectRatio,
   textOverlay
 }: ProjectionViewportProps) => {
   const showOverlay = isLoading || !isReady;
   const showNavigation = !showOverlay && (canGoPrev || canGoNext);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
 
   const handlePrev = () => {
     if (onGoPrev) {
@@ -38,10 +41,11 @@ const ProjectionViewport = ({
     }
   };
 
-  useEffect(() => {
+  const drawOverlay = useCallback(() => {
     const overlayCanvas = overlayCanvasRef.current;
     const baseCanvas = canvasRef.current;
-    if (!overlayCanvas || !baseCanvas) {
+    const frame = frameRef.current;
+    if (!overlayCanvas || !baseCanvas || !frame) {
       return;
     }
 
@@ -52,8 +56,8 @@ const ProjectionViewport = ({
 
     const hasOverlayData = Boolean(textOverlay?.nodes?.length && textOverlay.hasAdjustments);
 
-    const displayWidth = baseCanvas.clientWidth || baseCanvas.width;
-    const displayHeight = baseCanvas.clientHeight || baseCanvas.height;
+    const displayWidth = frame.clientWidth || baseCanvas.clientWidth || baseCanvas.width;
+    const displayHeight = frame.clientHeight || baseCanvas.clientHeight || baseCanvas.height;
 
     overlayCanvas.width = displayWidth;
     overlayCanvas.height = displayHeight;
@@ -71,6 +75,15 @@ const ProjectionViewport = ({
     ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
     ctx.shadowBlur = 6;
 
+    console.debug('[ProjectionViewport] overlay redraw', {
+      displayWidth,
+      displayHeight,
+      baseWidth: textOverlay.baseWidth,
+      baseHeight: textOverlay.baseHeight,
+      scaleX,
+      scaleY
+    });
+
     textOverlay.nodes.forEach((node) => {
       const fontSize = Math.max(node.fontSize, 6);
       const fontWeight = node.fontWeight ?? (node.role === 'heading' ? 600 : 400);
@@ -84,42 +97,62 @@ const ProjectionViewport = ({
     ctx.restore();
   }, [canvasRef, textOverlay]);
 
+  useEffect(() => {
+    drawOverlay();
+  }, [drawOverlay, aspectRatio]);
+
+  useEffect(() => {
+    window.addEventListener('resize', drawOverlay);
+    return () => {
+      window.removeEventListener('resize', drawOverlay);
+    };
+  }, [drawOverlay]);
+
+  const heightPerWidth =
+    aspectRatio && Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : 9 / 16;
+  const aspectPadding = heightPerWidth * 100;
+
   return (
-    <div className="viewport">
-      <canvas ref={canvasRef} className="viewport__canvas" />
-      <canvas ref={overlayCanvasRef} className="viewport__font-overlay" />
-      {showNavigation && (
-        <>
-          <button
-            type="button"
-            className="viewport__nav viewport__nav--prev"
-            onClick={handlePrev}
-            disabled={!canGoPrev}
-            aria-label="前のページへ"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            className="viewport__nav viewport__nav--next"
-            onClick={handleNext}
-            disabled={!canGoNext}
-            aria-label="次のページへ"
-          >
-            ›
-          </button>
-        </>
-      )}
-      {showOverlay && (
-        <div className="viewport__overlay">
-          {!isReady && !isLoading ? (
-            <p>プレビュー画像を読み込んでください</p>
-          ) : null}
-          {isLoading ? (
-            <LoadingSpinner className="viewport__overlay-spinner" message="読み込み中です..." />
-          ) : null}
-        </div>
-      )}
+    <div
+      className="viewport"
+      style={{ '--viewport-aspect': `${aspectPadding}%` } as CSSProperties}
+    >
+      <div className="viewport__content" ref={frameRef}>
+        <canvas ref={canvasRef} className="viewport__canvas" />
+        <canvas ref={overlayCanvasRef} className="viewport__font-overlay" />
+        {showOverlay && (
+          <div className="viewport__overlay">
+            {!isReady && !isLoading ? (
+              <p>プレビュー画像を読み込んでください</p>
+            ) : null}
+            {isLoading ? (
+              <LoadingSpinner className="viewport__overlay-spinner" message="読み込み中です..." />
+            ) : null}
+          </div>
+        )}
+        {showNavigation && (
+          <>
+            <button
+              type="button"
+              className="viewport__nav viewport__nav--prev"
+              onClick={handlePrev}
+              disabled={!canGoPrev}
+              aria-label="前のページへ"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="viewport__nav viewport__nav--next"
+              onClick={handleNext}
+              disabled={!canGoNext}
+              aria-label="次のページへ"
+            >
+              ›
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };

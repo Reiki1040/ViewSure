@@ -162,6 +162,25 @@ body {
     radial-gradient(70% 90% at 20% 10%, rgba(96, 135, 255, 0.22), transparent);
   overflow: hidden;
   padding: 16px;
+  min-height: 160px;
+}
+
+.wcag-preview__content--canvas {
+  padding: 0;
+  min-height: 0;
+}
+
+.wcag-preview__content--canvas::before {
+  content: '';
+  display: block;
+  padding-bottom: var(--wcag-aspect, 56.25%);
+}
+
+.wcag-preview__frame {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .wcag-preview__placeholder {
@@ -175,9 +194,10 @@ body {
 }
 
 .wcag-preview__canvas {
-  display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
   mix-blend-mode: screen;
   pointer-events: none;
 }
@@ -359,8 +379,8 @@ a {
 .app-shell {
   flex: 1;
   display: flex;
-  gap: 28px;
-  padding: 32px clamp(24px, 5vw, 64px) 48px;
+  gap: 20px;
+  padding: 16px clamp(20px, 4vw, 48px) 24px;
   position: relative;
   overflow: hidden;
 }
@@ -867,7 +887,7 @@ a {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 24px;
+  gap: 16px;
   z-index: 1;
 }
 
@@ -875,24 +895,36 @@ a {
   position: relative;
   flex: 1;
   border-radius: 18px;
-  border: 1px solid rgba(36, 46, 72, 0.6);
-  background: linear-gradient(160deg, rgba(10, 14, 24, 0.92), rgba(12, 16, 32, 0.85));
+  border: none;
+  background: transparent;
   overflow: hidden;
-  box-shadow: 0 24px 40px rgba(8, 10, 24, 0.45);
-  display: flex;
-  align-items: stretch;
 }
 
 .viewport::before {
-  display: none;
+  content: '';
+  display: block;
+  padding-bottom: var(--viewport-aspect, 56.25%);
+  border-radius: inherit;
+}
+
+.viewport__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 18px;
+  overflow: hidden;
+  background: transparent;
 }
 
 .viewport__canvas {
-  flex: 1;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
-  position: relative;
+  border-radius: inherit;
   z-index: 0;
 }
 
@@ -902,6 +934,7 @@ a {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  border-radius: inherit;
   z-index: 1;
 }
 
@@ -916,6 +949,7 @@ a {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(228, 234, 255, 0.85);
+  border-radius: inherit;
   z-index: 2;
 }
 

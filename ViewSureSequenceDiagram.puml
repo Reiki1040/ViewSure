@@ -1,0 +1,43 @@
+@startuml ViewSure_Sequence
+
+actor User
+participant "ProjectionStudioApp\n(App.tsx)" as App
+participant "FileUploader\n(FileUploader.tsx)" as Uploader
+participant "ProjectionAsset\n(fileLoader.ts)" as Asset
+participant "WebGL Renderer\n(useProjectionRenderer)" as Renderer
+participant "WCAG Helper\n(useWcagHelper)" as Wcag
+participant "Analyzer\n(wcag/analyzer.ts)" as Analyzer
+participant "WcagPreviewPanel" as Preview
+
+== 資料読み込み ==
+User -> App : アプリ画面を開く
+App -> Uploader : ファイル選択ダイアログを開く
+User -> Uploader : ファイルを選択/ドロップ
+Uploader -> App : onFileSelected(file)
+App -> Asset : loadProjectionAsset(file)
+Asset --> App : ProjectionAsset {getFrame, getTextContent, ...}
+App -> Renderer : loadImage(asset.getFrame(0))
+Renderer --> App : 初回フレーム描画完了
+App -> Wcag : setBrightness / setContrast
+
+== ページ切替 ==
+User -> App : Prev/Next ボタン
+App -> Renderer : asset.getFrame(n) \\n→ loadImage()
+Renderer --> App : 描画更新
+
+== WCAG 解析 ==
+User -> App : 「WCAG適合」ボタン
+App -> Wcag : applyAdjustments()
+Wcag -> Analyzer : analyzeProjectionAsset(asset)
+Analyzer --> Wcag : DocumentAnalysis + issues
+Wcag -> App : setBrightness / setContrast
+Wcag --> Preview : TextOverlayPayload 更新
+Preview --> User : 調整後テキストプレビュー表示
+
+== PDF 書き出し ==
+User -> App : 「PDF保存」ボタン
+App -> Renderer : 各ページ loadImage()/captureFrame()
+App -> Asset : getFrame(i) (繰り返し)
+App --> User : 生成したPDFをダウンロード
+
+@enduml
