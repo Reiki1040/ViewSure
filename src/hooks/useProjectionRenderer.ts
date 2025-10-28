@@ -111,10 +111,14 @@ export const useProjectionRenderer = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const resourcesRef = useRef<WebGLResources | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
   const toneMappingRef = useRef<ToneMappingExports | null>(null);
   const adjustmentsRef = useStableRef<AdjustmentPayload>({ brightness: 1, contrast: 1 });
   const lastInputRef = useRef<{ brightness: number; contrast: number }>({ brightness: 100, contrast: 0 });
   const rafHandleRef = useRef<number | null>(null);
+
+  const firstAspectRatioRef = useRef<number | null>(null);
+  const currentAspectRef = useRef<number | null>(null);
 
   const drawScene = useCallback(() => {
     const resources = resourcesRef.current;
@@ -131,7 +135,7 @@ export const useProjectionRenderer = () => {
       resources.canvasSize = { width: canvas.width, height: canvas.height };
     }
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.04, 0.05, 0.08, 1);
+    gl.clearColor(0.1, 0.12, 0.2, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     if (!resources.imageSize) {
@@ -150,6 +154,13 @@ export const useProjectionRenderer = () => {
       resources.imageSize
     );
     gl.uniform2f(uniformLocations.scale, scale.x, scale.y);
+
+    console.debug('[ProjectionRenderer] drawScene metrics', {
+      canvasSize: resources.canvasSize,
+      imageSize: resources.imageSize,
+      appliedScale: scale,
+      aspectRatio: currentAspectRef.current
+    });
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }, [adjustmentsRef]);
@@ -187,6 +198,20 @@ export const useProjectionRenderer = () => {
 
       const imageSize = getSourceDimensions(source);
       resources.imageSize = imageSize;
+      if (imageSize.width > 0 && imageSize.height > 0) {
+        if (firstAspectRatioRef.current === null) {
+          firstAspectRatioRef.current = imageSize.height / imageSize.width;
+          console.debug('[ProjectionRenderer] Initial aspect ratio captured', {
+            width: imageSize.width,
+            height: imageSize.height,
+            aspect: firstAspectRatioRef.current
+          });
+        }
+        currentAspectRef.current = firstAspectRatioRef.current;
+        setAspectRatio(firstAspectRatioRef.current);
+      } else {
+        console.warn('[ProjectionRenderer] Invalid image dimensions detected', imageSize);
+      }
 
       resources.canvasSize = {
         width: canvasRef.current?.width ?? imageSize.width,
@@ -206,6 +231,19 @@ export const useProjectionRenderer = () => {
     },
     [scheduleDraw]
   );
+
+  const resetAspectRatio = useCallback(() => {
+    firstAspectRatioRef.current = null;
+    currentAspectRef.current = null;
+    setAspectRatio(null);
+    console.debug('[ProjectionRenderer] resetAspectRatio invoked');
+  }, []);
+
+  const updateAspectRatio = useCallback((ratio: number | null) => {
+    currentAspectRef.current = ratio;
+    setAspectRatio(ratio);
+    console.debug('[ProjectionRenderer] updateAspectRatio invoked', ratio);
+  }, []);
 
   const updateAdjustments = useCallback(
     ({ brightness, contrast }: AdjustmentPayload) => {
@@ -300,7 +338,7 @@ export const useProjectionRenderer = () => {
         imageSize: null
       };
 
-      gl.clearColor(0.04, 0.05, 0.08, 1);
+      gl.clearColor(0.1, 0.12, 0.2, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
     },
     []
@@ -396,8 +434,11 @@ export const useProjectionRenderer = () => {
       isReady,
       loadImage,
       updateAdjustments,
-      captureFrame
+      captureFrame,
+      imageAspectRatio: aspectRatio,
+      resetAspectRatio,
+      updateAspectRatio
     }),
-    [captureFrame, isReady, loadImage, updateAdjustments]
+    [aspectRatio, captureFrame, isReady, loadImage, resetAspectRatio, updateAdjustments, updateAspectRatio]
   );
 };

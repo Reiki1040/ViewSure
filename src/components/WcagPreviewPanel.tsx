@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import type { TextOverlayPayload, TextOverlayNode } from '../hooks/useWcagHelper';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -11,13 +11,10 @@ type WcagPreviewPanelProps = {
 const drawOverlayText = (
   ctx: CanvasRenderingContext2D,
   nodes: TextOverlayNode[],
-  offsetX: number,
-  offsetY: number,
   scaleX: number,
   scaleY: number
 ) => {
   ctx.save();
-  ctx.translate(offsetX, offsetY);
   ctx.scale(scaleX, scaleY);
   ctx.textBaseline = 'top';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
@@ -41,59 +38,70 @@ const drawOverlayText = (
   ctx.restore();
 };
 
+const DEFAULT_ASPECT = 9 / 16;
+
 const WcagPreviewPanel = ({ overlay, aspectRatio, isBusy }: WcagPreviewPanelProps) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const hasAdjustments = Boolean(overlay?.hasAdjustments && overlay.nodes.length);
 
-  useEffect(() => {
-    const container = containerRef.current;
+  const redraw = useCallback(() => {
+    const frame = frameRef.current;
     const canvas = canvasRef.current;
-    if (!container || !canvas) {
+    if (!frame || !canvas) {
       return;
     }
-
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       return;
     }
 
     const dpr = window.devicePixelRatio ?? 1;
-    const containerWidth = container.clientWidth;
-    const targetAspect = Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : 9 / 16;
-    const containerHeight = Math.max(160, containerWidth * targetAspect);
+    const width = frame.clientWidth;
+    const height = frame.clientHeight;
+    if (width === 0 || height === 0) {
+      return;
+    }
 
-    canvas.style.width = `${containerWidth}px`;
-    canvas.style.height = `${containerHeight}px`;
-    canvas.width = Math.max(1, Math.floor(containerWidth * dpr));
-    canvas.height = Math.max(1, Math.floor(containerHeight * dpr));
+    canvas.width = Math.max(1, Math.floor(width * dpr));
+    canvas.height = Math.max(1, Math.floor(height * dpr));
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!overlay || !hasAdjustments) {
       return;
     }
 
-    const overlayRatio = overlay.baseHeight > 0 && overlay.baseWidth > 0 ? overlay.baseHeight / overlay.baseWidth : targetAspect;
-    let drawWidth = canvas.width / dpr;
-    let drawHeight = drawWidth * overlayRatio;
-    let offsetX = 0;
-    let offsetY = (canvas.height / dpr - drawHeight) / 2;
+    const scaleX = (canvas.width / dpr) / overlay.baseWidth;
+    const scaleY = (canvas.height / dpr) / overlay.baseHeight;
 
-    if (drawHeight > canvas.height / dpr) {
-      drawHeight = canvas.height / dpr;
-      drawWidth = drawHeight / overlayRatio;
-      offsetX = (canvas.width / dpr - drawWidth) / 2;
-      offsetY = 0;
-    }
+    console.debug('[WcagPreview] redraw', {
+      frame: { width, height },
+      canvas: { width: canvas.width, height: canvas.height },
+      base: { width: overlay.baseWidth, height: overlay.baseHeight },
+      scaleX,
+      scaleY
+    });
 
-    const scaleX = drawWidth / overlay.baseWidth;
-    const scaleY = drawHeight / overlay.baseHeight;
     ctx.save();
     ctx.scale(dpr, dpr);
-    drawOverlayText(ctx, overlay.nodes, offsetX, offsetY, scaleX, scaleY);
+    drawOverlayText(ctx, overlay.nodes, scaleX, scaleY);
     ctx.restore();
-  }, [overlay, hasAdjustments, aspectRatio]);
+  }, [overlay, hasAdjustments]);
+
+  useEffect(() => {
+    redraw();
+  }, [redraw, aspectRatio]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      redraw();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [redraw]);
 
   const statusMessage = useMemo(() => {
     if (isBusy && !overlay) {
@@ -108,19 +116,29 @@ const WcagPreviewPanel = ({ overlay, aspectRatio, isBusy }: WcagPreviewPanelProp
     return null;
   }, [overlay, hasAdjustments, isBusy]);
 
+  const heightPerWidth =
+    Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : DEFAULT_ASPECT;
+  const aspectPadding = heightPerWidth * 100;
+  const showCanvas = !statusMessage;
+
   return (
     <section className="wcag-preview">
       <header className="wcag-preview__header">
         <h2>WCAG 適合プレビュー</h2>
         <span>調整済みのテキストのみを確認できます。</span>
       </header>
-      <div className="wcag-preview__content" ref={containerRef}>
-        {statusMessage ? (
-          <div className="wcag-preview__placeholder">
-            {isBusy && !overlay ? <LoadingSpinner size="small" message={statusMessage} /> : <p>{statusMessage}</p>}
+      <div
+        className={`wcag-preview__content${showCanvas ? ' wcag-preview__content--canvas' : ''}`}
+        style={showCanvas ? ({ '--wcag-aspect': `${aspectPadding}%` } as CSSProperties) : undefined}
+      >
+        {showCanvas ? (
+          <div className="wcag-preview__frame" ref={frameRef}>
+            <canvas ref={canvasRef} className="wcag-preview__canvas" />
           </div>
         ) : (
-          <canvas ref={canvasRef} className="wcag-preview__canvas" />
+          <div className="wcag-preview__placeholder">
+            {isBusy && !overlay ? <LoadingSpinner size="small" message={statusMessage!} /> : <p>{statusMessage}</p>}
+          </div>
         )}
       </div>
     </section>

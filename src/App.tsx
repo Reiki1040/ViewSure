@@ -26,13 +26,24 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const [statusMessage, setStatusMessage] = useState<string | null>('ファイルをアップロードしてください');
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { canvasRef, isReady, loadImage, updateAdjustments, captureFrame } = useProjectionRenderer();
+  const {
+    canvasRef,
+    isReady,
+    loadImage,
+    updateAdjustments,
+    captureFrame,
+    imageAspectRatio,
+    resetAspectRatio,
+    updateAspectRatio
+  } = useProjectionRenderer();
   const [asset, setAsset] = useState<ProjectionAsset | null>(null);
   const [currentFrame, setCurrentFrame] = useState(1);
   const latestAdjustmentsRef = useRef({ brightness: INITIAL_BRIGHTNESS, contrast: INITIAL_CONTRAST });
   const fileUploaderRef = useRef<FileUploaderHandle | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [wcagAspectRatio, setWcagAspectRatio] = useState(DEFAULT_WCAG_ASPECT);
+  const initialViewportAspectRef = useRef<number | null>(null);
+  const [lockedViewportAspect, setLockedViewportAspect] = useState<number | null>(null);
   const {
     analysis,
     analysisError,
@@ -56,6 +67,10 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     setStatusMessage(null);
 
     try {
+      initialViewportAspectRef.current = null;
+      setLockedViewportAspect(null);
+      resetAspectRatio();
+      console.debug('[App] New file selected, clearing aspect ratio state');
       const projectionAsset = await loadProjectionAsset(file);
       setCurrentFrame(1);
       setAsset(projectionAsset);
@@ -71,7 +86,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
       setIsLoading(false);
       setActiveFileName(null);
     }
-  }, []);
+  }, [resetAspectRatio]);
 
   const resetAdjustments = useCallback(() => {
     setBrightness(INITIAL_BRIGHTNESS);
@@ -89,6 +104,21 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     latestAdjustmentsRef.current = { brightness, contrast };
     updateAdjustments({ brightness, contrast });
   }, [brightness, contrast, updateAdjustments]);
+
+  useEffect(() => {
+    if (imageAspectRatio && imageAspectRatio > 0) {
+      if (initialViewportAspectRef.current === null) {
+        initialViewportAspectRef.current = imageAspectRatio;
+        const fixedAspect = imageAspectRatio;
+        setLockedViewportAspect(fixedAspect);
+        updateAspectRatio(fixedAspect);
+        console.debug('[App] Locked initial aspect ratio', fixedAspect);
+      }
+    } else if (lockedViewportAspect !== null) {
+      updateAspectRatio(lockedViewportAspect);
+      console.debug('[App] Restored locked aspect ratio', lockedViewportAspect);
+    }
+  }, [imageAspectRatio, lockedViewportAspect, updateAspectRatio]);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,14 +168,25 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     [currentFrame, getTextOverlayPayload]
   );
 
+  const effectiveViewportAspect = lockedViewportAspect ?? imageAspectRatio ?? wcagAspectRatio;
+
+  useEffect(() => {
+    console.debug('[App] effectiveViewportAspect', {
+      lockedViewportAspect,
+      imageAspectRatio,
+      wcagAspectRatio,
+      effectiveViewportAspect
+    });
+  }, [effectiveViewportAspect, imageAspectRatio, lockedViewportAspect, wcagAspectRatio]);
+
   useEffect(() => {
     if (!analysis || !analysis.slides.length) {
       setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
       return;
     }
-    const primarySlide = analysis.slides[0];
-    if (primarySlide.width > 0 && primarySlide.height > 0) {
-      setWcagAspectRatio(primarySlide.height / primarySlide.width);
+    const baseSlide = analysis.slides[0];
+    if (baseSlide.width > 0 && baseSlide.height > 0) {
+      setWcagAspectRatio(baseSlide.height / baseSlide.width);
     } else {
       setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
     }
@@ -382,11 +423,12 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             canGoNext={canGoNext}
             onGoPrev={goToPrevious}
             onGoNext={goToNext}
+            aspectRatio={effectiveViewportAspect}
             textOverlay={null}
           />
           <WcagPreviewPanel
             overlay={textOverlay}
-            aspectRatio={wcagAspectRatio}
+            aspectRatio={effectiveViewportAspect}
             isBusy={!isReady || isLoading || isApplying || isAnalyzing}
           />
         </main>
