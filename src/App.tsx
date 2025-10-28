@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import FileUploader, { type FileUploaderHandle } from './components/FileUploader';
 import ProjectionControls from './components/ProjectionControls';
 import WcagSummary from './components/WcagSummary';
 import ProjectionViewport from './components/ProjectionViewport';
+import WcagPreviewPanel from './components/WcagPreviewPanel';
 import TopMenuBar from './components/TopMenuBar';
 import LandingScreen from './components/LandingScreen';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
@@ -12,6 +13,7 @@ import { useWcagHelper } from './hooks/useWcagHelper';
 
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
+const DEFAULT_WCAG_ASPECT = 9 / 16;
 
 type ProjectionStudioAppProps = {
   onBackToLanding?: () => void;
@@ -30,6 +32,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const latestAdjustmentsRef = useRef({ brightness: INITIAL_BRIGHTNESS, contrast: INITIAL_CONTRAST });
   const fileUploaderRef = useRef<FileUploaderHandle | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [wcagAspectRatio, setWcagAspectRatio] = useState(DEFAULT_WCAG_ASPECT);
   const {
     analysis,
     analysisError,
@@ -129,6 +132,24 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
       cancelled = true;
     };
   }, [asset, currentFrame, loadImage, updateAdjustments]);
+
+  const textOverlay = useMemo(
+    () => getTextOverlayPayload(currentFrame - 1),
+    [currentFrame, getTextOverlayPayload]
+  );
+
+  useEffect(() => {
+    if (!analysis || !analysis.slides.length) {
+      setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
+      return;
+    }
+    const primarySlide = analysis.slides[0];
+    if (primarySlide.width > 0 && primarySlide.height > 0) {
+      setWcagAspectRatio(primarySlide.height / primarySlide.width);
+    } else {
+      setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
+    }
+  }, [analysis]);
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -361,7 +382,12 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             canGoNext={canGoNext}
             onGoPrev={goToPrevious}
             onGoNext={goToNext}
-            textOverlay={getTextOverlayPayload(currentFrame - 1)}
+            textOverlay={null}
+          />
+          <WcagPreviewPanel
+            overlay={textOverlay}
+            aspectRatio={wcagAspectRatio}
+            isBusy={!isReady || isLoading || isApplying || isAnalyzing}
           />
         </main>
       </div>

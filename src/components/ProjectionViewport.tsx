@@ -1,14 +1,6 @@
 import { RefObject, useEffect, useRef } from 'react';
-import type { SlideTextNode } from '../utils/wcag/analyzer';
+import type { TextOverlayPayload } from '../hooks/useWcagHelper';
 import LoadingSpinner from './LoadingSpinner';
-
-type TextOverlayPayload = {
-  nodes: SlideTextNode[];
-  baseWidth: number;
-  baseHeight: number;
-  headingScale: number;
-  bodyScale: number;
-};
 
 type ProjectionViewportProps = {
   canvasRef: RefObject<HTMLCanvasElement>;
@@ -58,11 +50,7 @@ const ProjectionViewport = ({
       return;
     }
 
-    const hasOverlayData =
-      textOverlay &&
-      textOverlay.nodes &&
-      textOverlay.nodes.length > 0 &&
-      (textOverlay.headingScale !== 1 || textOverlay.bodyScale !== 1);
+    const hasOverlayData = Boolean(textOverlay?.nodes?.length && textOverlay.hasAdjustments);
 
     const displayWidth = baseCanvas.clientWidth || baseCanvas.width;
     const displayHeight = baseCanvas.clientHeight || baseCanvas.height;
@@ -84,14 +72,13 @@ const ProjectionViewport = ({
     ctx.shadowBlur = 6;
 
     textOverlay.nodes.forEach((node) => {
-      const scale = node.role === 'heading' ? textOverlay.headingScale : textOverlay.bodyScale;
-      if (!Number.isFinite(scale) || scale <= 0) {
-        return;
-      }
-      const fontSize = Math.max(node.fontSize * scale, 6);
-      ctx.font = `${fontSize}px "Inter", "Segoe UI", sans-serif`;
-      ctx.fillStyle = node.role === 'heading' ? 'rgba(244, 248, 255, 0.95)' : 'rgba(224, 230, 255, 0.85)';
-      ctx.fillText(node.text, node.bounds.x, node.bounds.y);
+      const fontSize = Math.max(node.fontSize, 6);
+      const fontWeight = node.fontWeight ?? (node.role === 'heading' ? 600 : 400);
+      const fontFamily = node.fontFamily ?? '"Inter", "Segoe UI", sans-serif';
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle =
+        node.color ?? (node.role === 'heading' ? 'rgba(244, 248, 255, 0.95)' : 'rgba(224, 230, 255, 0.85)');
+      ctx.fillText(node.content, node.bounds.x, node.bounds.y);
     });
 
     ctx.restore();

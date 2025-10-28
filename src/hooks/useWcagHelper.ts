@@ -1,20 +1,41 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ProjectionAsset } from '../utils/fileLoader';
-import { analyzeProjectionAsset, type DocumentAnalysis } from '../utils/wcag/analyzer';
-
-type SlideTextNodes = NonNullable<DocumentAnalysis['slides'][number]['textNodes']>;
+import { analyzeProjectionAsset, createTextRenderingModel, type DocumentAnalysis } from '../utils/wcag/analyzer';
+import type {
+  TextRenderingModel,
+  TextNodeAdjustments,
+  TextNodeBaselineStyle,
+  TextNodeRole
+} from '../types/textModel';
 
 export type FontAdjustments = {
   headingScale: number;
   bodyScale: number;
 };
 
+export type TextOverlayNode = {
+  nodeId: string;
+  content: string;
+  role: TextNodeRole;
+  fontSize: number;
+  fontFamily?: string;
+  fontWeight?: number | string;
+  color?: string;
+  background?: string;
+  letterSpacing?: number;
+  bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+};
+
 export type TextOverlayPayload = {
-  nodes: SlideTextNodes;
+  nodes: TextOverlayNode[];
   baseWidth: number;
   baseHeight: number;
-  headingScale: number;
-  bodyScale: number;
+  hasAdjustments: boolean;
 };
 
 type UseWcagHelperParams = {
@@ -27,6 +48,23 @@ type UseWcagHelperParams = {
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const computeComputedStyle = (
+  baselineStyle: TextNodeBaselineStyle,
+  adjustments: TextNodeAdjustments
+) => {
+  const baseFontSize = Math.max(baselineStyle.fontSize, 1);
+  const scale = adjustments.scale ?? 1;
+  const fontSize = Math.max(adjustments.absoluteFontSize ?? baseFontSize * scale, 1);
+  return {
+    fontSize,
+    fontFamily: adjustments.fontFamily ?? baselineStyle.fontFamily,
+    fontWeight: adjustments.fontWeight ?? baselineStyle.fontWeight,
+    color: adjustments.color ?? baselineStyle.color,
+    background: adjustments.background ?? baselineStyle.background,
+    letterSpacing: adjustments.letterSpacing
+  };
+};
 
 export const useWcagHelper = ({
   asset,
@@ -42,6 +80,7 @@ export const useWcagHelper = ({
   const [isApplying, setIsApplying] = useState(false);
   const [fontAdjustments, setFontAdjustments] = useState<FontAdjustments | null>(null);
   const [previousAdjustments, setPreviousAdjustments] = useState<{ brightness: number; contrast: number } | null>(null);
+  const [textModel, setTextModel] = useState<TextRenderingModel | null>(null);
 
   useEffect(() => {
     if (!asset) {
@@ -51,6 +90,7 @@ export const useWcagHelper = ({
       setIsApplying(false);
       setFontAdjustments(null);
       setPreviousAdjustments(null);
+      setTextModel(null);
       return;
     }
 
@@ -59,6 +99,7 @@ export const useWcagHelper = ({
     setAnalysisError(null);
     setFontAdjustments(null);
     setPreviousAdjustments(null);
+    setTextModel(null);
     setIsAnalyzing(true);
 
     analyzeProjectionAsset(asset)
@@ -67,6 +108,7 @@ export const useWcagHelper = ({
           return;
         }
         setAnalysis(result);
+        setTextModel(createTextRenderingModel(result));
         const issueCount = result.issues.length;
         if (issueCount > 0) {
           setStatusMessage(`WCAG 解析: ${issueCount} 件の改善候補が見つかりました`);
@@ -78,6 +120,7 @@ export const useWcagHelper = ({
         console.error('WCAG 解析に失敗しました', error);
         if (!cancelled) {
           setAnalysisError(error instanceof Error ? error.message : 'WCAG 解析に失敗しました');
+          setTextModel(null);
           setStatusMessage('WCAG 解析に失敗しました');
         }
       })
@@ -139,6 +182,31 @@ export const useWcagHelper = ({
       setBrightness(targetBrightness);
       setContrast(targetContrast);
       setFontAdjustments({ headingScale, bodyScale });
+      setTextModel((currentModel) => {
+        if (!currentModel) {
+          return currentModel;
+        }
+        return {
+          slides: currentModel.slides.map((slide) => ({
+            ...slide,
+            nodes: slide.nodes.map((node) => {
+              if (node.role !== 'heading' && node.role !== 'body') {
+                return node;
+              }
+              const scale = node.role === 'heading' ? headingScale : bodyScale;
+              const adjustments = {
+                ...node.adjustments,
+                scale
+              };
+              return {
+                ...node,
+                adjustments,
+                computedStyle: computeComputedStyle(node.baselineStyle, adjustments)
+              };
+            })
+          }))
+        };
+      });
 
       const fontIssues = analysis.issues.filter((issue) => issue.rule === 'font-size').length;
       const contrastIssues = analysis.issues.filter((issue) => issue.rule === 'contrast').length;
@@ -175,27 +243,60 @@ export const useWcagHelper = ({
     }
     setFontAdjustments(null);
     setPreviousAdjustments(null);
+    setTextModel((currentModel) => {
+      if (!currentModel) {
+        return currentModel;
+      }
+      return {
+        slides: currentModel.slides.map((slide) => ({
+          ...slide,
+          nodes: slide.nodes.map((node) => {
+            const { scale, ...rest } = node.adjustments;
+            if (typeof scale !== 'number') {
+              return node;
+            }
+            const adjustments: TextNodeAdjustments = { ...rest };
+            return {
+              ...node,
+              adjustments,
+              computedStyle: computeComputedStyle(node.baselineStyle, adjustments)
+            };
+          })
+        }))
+      };
+    });
     setStatusMessage('WCAG による調整を解除しました');
   }, [fontAdjustments, previousAdjustments, setBrightness, setContrast, setStatusMessage]);
 
   const getTextOverlayPayload = useCallback(
     (pageIndex: number): TextOverlayPayload | null => {
-      if (!analysis || !fontAdjustments) {
+      if (!textModel) {
         return null;
       }
-      const slide = analysis.slides[pageIndex];
-      if (!slide || !slide.textNodes || slide.textNodes.length === 0) {
+      const slide = textModel.slides[pageIndex];
+      if (!slide || slide.nodes.length === 0) {
         return null;
       }
+      const hasAdjustments = slide.nodes.some((node) => Object.keys(node.adjustments).length > 0);
       return {
-        nodes: slide.textNodes as SlideTextNodes,
-        baseWidth: slide.width,
-        baseHeight: slide.height,
-        headingScale: fontAdjustments.headingScale,
-        bodyScale: fontAdjustments.bodyScale
+        nodes: slide.nodes.map((node) => ({
+          nodeId: node.nodeId,
+          content: node.content,
+          role: node.role,
+          fontSize: node.computedStyle.fontSize,
+          fontFamily: node.computedStyle.fontFamily,
+          fontWeight: node.computedStyle.fontWeight,
+          color: node.computedStyle.color,
+          background: node.computedStyle.background,
+          letterSpacing: node.computedStyle.letterSpacing,
+          bounds: node.layout.bounds
+        })),
+        baseWidth: slide.baseWidth,
+        baseHeight: slide.baseHeight,
+        hasAdjustments
       };
     },
-    [analysis, fontAdjustments]
+    [textModel]
   );
 
   const summaryAdjustments = useMemo(() => fontAdjustments, [fontAdjustments]);
@@ -205,6 +306,7 @@ export const useWcagHelper = ({
     analysisError,
     isAnalyzing,
     isApplying,
+    textModel,
     fontAdjustments: summaryAdjustments,
     applyAdjustments,
     clearAdjustments,

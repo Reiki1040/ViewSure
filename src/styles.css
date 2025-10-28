@@ -128,6 +128,60 @@ body {
   border-top-color: rgba(228, 234, 255, 0.9);
 }
 
+.wcag-preview {
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 20px 45px rgba(45, 56, 85, 0.08);
+  border: 1px solid rgba(138, 160, 220, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wcag-preview__header h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: #1e2742;
+}
+
+.wcag-preview__header span {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: rgba(30, 39, 66, 0.6);
+}
+
+.wcag-preview__content {
+  position: relative;
+  border-radius: 12px;
+  background:
+    linear-gradient(140deg, rgba(14, 20, 36, 0.85), rgba(22, 32, 58, 0.92)),
+    radial-gradient(70% 90% at 20% 10%, rgba(96, 135, 255, 0.22), transparent);
+  overflow: hidden;
+  padding: 16px;
+}
+
+.wcag-preview__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  min-height: 160px;
+  text-align: center;
+  color: rgba(228, 234, 255, 0.78);
+}
+
+.wcag-preview__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
 @keyframes transition-overlay-fade {
   from {
     opacity: 0;
@@ -810,8 +864,10 @@ a {
   position: relative;
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 24px;
   z-index: 1;
 }
 
