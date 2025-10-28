@@ -1,9 +1,21 @@
-import { ChangeEvent, DragEvent, useCallback, useRef, useState } from 'react';
+import {
+  ChangeEvent,
+  DragEvent,
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState
+} from 'react';
 
 type FileUploaderProps = {
   disabled?: boolean;
   statusMessage?: string | null;
   onFileSelected: (file: File) => void | Promise<void>;
+};
+
+export type FileUploaderHandle = {
+  openFileDialog: () => void;
 };
 
 const ACCEPTED_TYPES = [
@@ -18,7 +30,7 @@ const ACCEPTED_TYPES = [
   '.heif'
 ];
 
-const FileUploader = ({ disabled = false, statusMessage, onFileSelected }: FileUploaderProps) => {
+const FileUploader = forwardRef<FileUploaderHandle, FileUploaderProps>(({ disabled = false, statusMessage, onFileSelected }, ref) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
 
@@ -69,6 +81,14 @@ const FileUploader = ({ disabled = false, statusMessage, onFileSelected }: FileU
     inputRef.current?.click();
   }, []);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      openFileDialog: openFilePicker
+    }),
+    [openFilePicker]
+  );
+
   return (
     <section className="uploader">
       <header className="uploader__header">
@@ -107,6 +127,8 @@ const FileUploader = ({ disabled = false, statusMessage, onFileSelected }: FileU
       </div>
     </section>
   );
-};
+});
+
+FileUploader.displayName = 'FileUploader';
 
 export default FileUploader;

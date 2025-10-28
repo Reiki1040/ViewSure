@@ -1,3 +1,5 @@
+import LoadingSpinner from './LoadingSpinner';
+
 type ProjectionControlsProps = {
   brightness: number;
   contrast: number;
@@ -7,6 +9,13 @@ type ProjectionControlsProps = {
   onReset: () => void;
   pageCount?: number;
   currentPage?: number;
+  onRequestWcagCheck?: () => void;
+  wcagDisabled?: boolean;
+  onClearWcagAdjustments?: () => void;
+  showWcagClearButton?: boolean;
+  wcagClearDisabled?: boolean;
+  wcagProcessing?: boolean;
+  wcagProcessingMessage?: string;
 };
 
 const ProjectionControls = ({
@@ -17,7 +26,14 @@ const ProjectionControls = ({
   onContrastChange,
   onReset,
   pageCount,
-  currentPage
+  currentPage,
+  onRequestWcagCheck,
+  wcagDisabled = false,
+  onClearWcagAdjustments,
+  showWcagClearButton = false,
+  wcagClearDisabled = false,
+  wcagProcessing = false,
+  wcagProcessingMessage
 }: ProjectionControlsProps) => {
   const showPageIndicator = !!pageCount && !!currentPage;
 
@@ -60,6 +76,35 @@ const ProjectionControls = ({
           disabled={disabled}
         />
       </label>
+      <button
+        className="wcag-button"
+        type="button"
+        disabled={disabled || wcagDisabled}
+        onClick={onRequestWcagCheck}
+      >
+        {wcagProcessing ? (
+          <LoadingSpinner
+            size="small"
+            className="wcag-button__loader"
+            message={wcagProcessingMessage ?? '処理中...'}
+          />
+        ) : (
+          'WCAG 適合'
+        )}
+      </button>
+      {showWcagClearButton ? (
+        <button
+          className="wcag-clear-button"
+          type="button"
+          disabled={disabled || wcagClearDisabled}
+          onClick={onClearWcagAdjustments}
+        >
+          修正をすべて削除
+        </button>
+      ) : null}
+      <button className="preview-button" type="button" disabled={disabled}>
+        プロジェクタープレビュー
+      </button>
       <button className="reset-button" onClick={onReset} disabled={disabled}>
         設定をリセット
       </button>

@@ -33,6 +33,12 @@ type AdjustmentPayload = {
   contrast: number;
 };
 
+export type CaptureFrameResult = {
+  blob: Blob;
+  width: number;
+  height: number;
+};
+
 const getSourceDimensions = (source: TexImageSource) => {
   if (source instanceof ImageBitmap) {
     return { width: source.width, height: source.height };
@@ -222,7 +228,7 @@ export const useProjectionRenderer = () => {
         return;
       }
 
-      const gl = canvas.getContext('webgl');
+      const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
       if (!gl) {
         throw new Error('WebGL を初期化できませんでした。対応しているブラウザをご確認ください。');
       }
@@ -328,6 +334,38 @@ export const useProjectionRenderer = () => {
     };
   }, [initializeWebGL, scheduleDraw]);
 
+  const captureFrame = useCallback(async (): Promise<CaptureFrameResult> => {
+    const canvas = canvasRef.current;
+    const resources = resourcesRef.current;
+
+    if (!canvas || !resources || !resources.imageSize) {
+      throw new Error('プレビューが準備できていません');
+    }
+
+    drawScene();
+    try {
+      resources.gl.finish?.();
+    } catch {
+      // finish が未定義の環境向けフォールバック
+    }
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (result) {
+          resolve(result);
+        } else {
+          reject(new Error('プレビュー画像の書き出しに失敗しました'));
+        }
+      }, 'image/png');
+    });
+
+    return {
+      blob,
+      width: canvas.width,
+      height: canvas.height
+    };
+  }, [drawScene]);
+
   useEffect(() => {
     let disposed = false;
     loadToneMappingModule()
@@ -357,8 +395,9 @@ export const useProjectionRenderer = () => {
       canvasRef,
       isReady,
       loadImage,
-      updateAdjustments
+      updateAdjustments,
+      captureFrame
     }),
-    [isReady, loadImage, updateAdjustments]
+    [captureFrame, isReady, loadImage, updateAdjustments]
   );
 };
