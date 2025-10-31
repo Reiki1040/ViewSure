@@ -81,7 +81,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
         projectionAsset.pageCount > 1
           ? `${file.name} (${projectionAsset.pageCount} ページ)`
           : `${file.name} を読み込みました`
-      );
+      ); //testcomment
     } catch (error) {
       console.error(error);
       setStatusMessage(error instanceof Error ? error.message : '読み込みに失敗しました');
