@@ -31,6 +31,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     isReady,
     loadImage,
     updateAdjustments,
+    updateProjectorPreview,
     captureFrame,
     imageAspectRatio,
     resetAspectRatio,
@@ -44,7 +45,8 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   const [wcagAspectRatio, setWcagAspectRatio] = useState(DEFAULT_WCAG_ASPECT);
   const initialViewportAspectRef = useRef<number | null>(null);
   const [lockedViewportAspect, setLockedViewportAspect] = useState<number | null>(null);
-  const {
+  const [projectorEnabled, setProjectorEnabled] = useState(false);
+    const {
     analysis,
     analysisError,
     isAnalyzing,
@@ -100,138 +102,6 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     fileUploaderRef.current?.openFileDialog();
   }, [isExporting, isLoading]);
 
-  useEffect(() => {
-    latestAdjustmentsRef.current = { brightness, contrast };
-    updateAdjustments({ brightness, contrast });
-  }, [brightness, contrast, updateAdjustments]);
-
-  useEffect(() => {
-    if (imageAspectRatio && imageAspectRatio > 0) {
-      if (initialViewportAspectRef.current === null) {
-        initialViewportAspectRef.current = imageAspectRatio;
-        const fixedAspect = imageAspectRatio;
-        setLockedViewportAspect(fixedAspect);
-        updateAspectRatio(fixedAspect);
-        console.debug('[App] Locked initial aspect ratio', fixedAspect);
-      }
-    } else if (lockedViewportAspect !== null) {
-      updateAspectRatio(lockedViewportAspect);
-      console.debug('[App] Restored locked aspect ratio', lockedViewportAspect);
-    }
-  }, [imageAspectRatio, lockedViewportAspect, updateAspectRatio]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const currentAsset = asset;
-    if (!currentAsset || currentAsset.pageCount === 0) {
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const frameIndex = Math.min(currentFrame - 1, currentAsset.pageCount - 1);
-
-    const renderFrame = async () => {
-      const shouldShowLoading = !(currentAsset.hasFrame?.(frameIndex) ?? false);
-      if (shouldShowLoading) {
-        setIsLoading(true);
-      }
-      try {
-        const source = await currentAsset.getFrame(frameIndex);
-        if (cancelled) {
-          return;
-        }
-        await loadImage(source);
-        const { brightness: targetBrightness, contrast: targetContrast } = latestAdjustmentsRef.current;
-        updateAdjustments({ brightness: targetBrightness, contrast: targetContrast });
-      } catch (error) {
-        console.error(error);
-        if (!cancelled) {
-          setStatusMessage(error instanceof Error ? error.message : 'フレームの描画に失敗しました');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void renderFrame();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [asset, currentFrame, loadImage, updateAdjustments]);
-
-  const textOverlay = useMemo(
-    () => getTextOverlayPayload(currentFrame - 1),
-    [currentFrame, getTextOverlayPayload]
-  );
-
-  const effectiveViewportAspect = lockedViewportAspect ?? imageAspectRatio ?? wcagAspectRatio;
-
-  useEffect(() => {
-    console.debug('[App] effectiveViewportAspect', {
-      lockedViewportAspect,
-      imageAspectRatio,
-      wcagAspectRatio,
-      effectiveViewportAspect
-    });
-  }, [effectiveViewportAspect, imageAspectRatio, lockedViewportAspect, wcagAspectRatio]);
-
-  useEffect(() => {
-    if (!analysis || !analysis.slides.length) {
-      setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
-      return;
-    }
-    const baseSlide = analysis.slides[0];
-    if (baseSlide.width > 0 && baseSlide.height > 0) {
-      setWcagAspectRatio(baseSlide.height / baseSlide.width);
-    } else {
-      setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
-    }
-  }, [analysis]);
-
-  const handlePageChange = useCallback(
-    (page: number) => {
-      const pageCount = asset?.pageCount ?? 0;
-      const nextPage = Math.min(Math.max(page, 1), pageCount || 1);
-
-      if (nextPage === currentFrame) {
-        if (asset && pageCount > 1 && activeFileName) {
-          setStatusMessage(`${activeFileName} (${nextPage} / ${pageCount} ページ)`);
-        }
-        return;
-      }
-
-      setCurrentFrame(nextPage);
-      if (asset && pageCount > 1 && activeFileName) {
-        setStatusMessage(`${activeFileName} (${nextPage} / ${pageCount} ページ)`);
-      }
-    },
-    [activeFileName, asset, currentFrame]
-  );
-
-  const pageCount = asset?.pageCount ?? 0;
-  const canGoPrev = pageCount > 1 && currentFrame > 1;
-  const canGoNext = pageCount > 1 && currentFrame < pageCount;
-  const canDownload = Boolean(asset) && isReady && !isLoading && !isExporting;
-  const hasWcagAdjustments = Boolean(fontAdjustments);
-  const wcagProcessing = isApplying || isAnalyzing;
-  const wcagProcessingMessage = isApplying ? '適用中...' : isAnalyzing ? '解析中...' : undefined;
-
-  const goToPrevious = useCallback(() => {
-    if (canGoPrev) {
-      handlePageChange(currentFrame - 1);
-    }
-  }, [canGoPrev, currentFrame, handlePageChange]);
-
-  const goToNext = useCallback(() => {
-    if (canGoNext) {
-      handlePageChange(currentFrame + 1);
-    }
-  }, [canGoNext, currentFrame, handlePageChange]);
-
   const handleDownloadCurrentView = useCallback(async () => {
     if (isExporting) {
       return;
@@ -255,7 +125,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
         reader.readAsDataURL(blob);
       });
 
-    const totalPages = asset.pageCount || 1;
+      const totalPages = asset.pageCount || 1;
     const activeIndex = currentFrame - 1;
     const baseName = activeFileName ? activeFileName.replace(/\.[^/.]+$/, '') : 'ViewSure_Preview';
     const adjustments = { brightness, contrast };
@@ -345,6 +215,129 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     updateAdjustments
   ]);
 
+  // WCAG プレビュー用のテキストオーバーレイとアスペクト
+  const textOverlay = useMemo(
+    () => getTextOverlayPayload(currentFrame - 1),
+    [currentFrame, getTextOverlayPayload]
+  );
+  const effectiveViewportAspect = lockedViewportAspect ?? imageAspectRatio ?? wcagAspectRatio;
+
+  useEffect(() => {
+    if (!analysis || !analysis.slides.length) {
+      setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
+      return;
+    }
+    const baseSlide = analysis.slides[0];
+    if (baseSlide.width > 0 && baseSlide.height > 0) {
+      setWcagAspectRatio(baseSlide.height / baseSlide.width);
+    } else {
+      setWcagAspectRatio(DEFAULT_WCAG_ASPECT);
+    }
+  }, [analysis]);
+
+  // ページングとダウンロード可否
+  const pageCount = asset?.pageCount ?? 0;
+  const canGoPrev = pageCount > 1 && currentFrame > 1;
+  const canGoNext = pageCount > 1 && currentFrame < pageCount;
+  const canDownload = Boolean(asset) && isReady && !isLoading && !isExporting;
+  const hasWcagAdjustments = Boolean(fontAdjustments);
+  const wcagProcessing = isApplying || isAnalyzing;
+  const wcagProcessingMessage = isApplying ? '適用中...' : isAnalyzing ? '解析中...' : undefined;
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const total = asset?.pageCount ?? 0;
+      const nextPage = Math.min(Math.max(page, 1), total || 1);
+      if (nextPage === currentFrame) {
+        if (asset && total > 1 && activeFileName) {
+          setStatusMessage(`${activeFileName} (${nextPage} / ${total} ページ)`);
+        }
+        return;
+      }
+      setCurrentFrame(nextPage);
+      if (asset && total > 1 && activeFileName) {
+        setStatusMessage(`${activeFileName} (${nextPage} / ${total} ページ)`);
+      }
+    },
+    [activeFileName, asset, currentFrame]
+  );
+
+  const goToPrevious = useCallback(() => {
+    if (canGoPrev) {
+      handlePageChange(currentFrame - 1);
+    }
+  }, [canGoPrev, currentFrame, handlePageChange]);
+
+  const goToNext = useCallback(() => {
+    if (canGoNext) {
+      handlePageChange(currentFrame + 1);
+    }
+  }, [canGoNext, currentFrame, handlePageChange]);
+
+  // プロジェクタープレビュー（投影シミュレーション）トグル
+  const handleToggleProjector = useCallback(
+    (enabled: boolean) => {
+      setProjectorEnabled(enabled);
+      if (enabled) {
+        updateProjectorPreview({
+          enabled: true,
+          gamma: 2.2,
+          blackLift: 0.12,
+          colorTempShift: 0.0,
+          vignette: 0.18,
+          hotspot: 0.08
+        });
+      } else {
+        updateProjectorPreview({ enabled: false });
+      }
+    },
+    [updateProjectorPreview]
+  );
+
+  // 現在ページのフレームを描画
+  useEffect(() => {
+    let cancelled = false;
+    const currentAsset = asset;
+    if (!currentAsset || currentAsset.pageCount === 0) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const frameIndex = Math.min(currentFrame - 1, currentAsset.pageCount - 1);
+
+    const renderFrame = async () => {
+      const shouldShowLoading = !(currentAsset.hasFrame?.(frameIndex) ?? false);
+      if (shouldShowLoading) {
+        setIsLoading(true);
+      }
+      try {
+        const source = await currentAsset.getFrame(frameIndex);
+        if (cancelled) {
+          return;
+        }
+        await loadImage(source);
+        const { brightness: targetBrightness, contrast: targetContrast } = latestAdjustmentsRef.current;
+        updateAdjustments({ brightness: targetBrightness, contrast: targetContrast });
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) {
+          setStatusMessage(error instanceof Error ? error.message : 'フレームの描画に失敗しました');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void renderFrame();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [asset, currentFrame, loadImage, updateAdjustments]);
+
   const handleSignOut = useCallback(() => {
     signOut();
     onBackToLanding?.();
@@ -399,6 +392,8 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
               wcagClearDisabled={isApplying || isLoading || isExporting}
               wcagProcessing={wcagProcessing}
               wcagProcessingMessage={wcagProcessingMessage}
+              projectorEnabled={projectorEnabled}
+              onToggleProjector={handleToggleProjector}
             />
             <WcagSummary
               analysis={analysis}
@@ -544,3 +539,4 @@ const App = () => {
 };
 
 export default App;
+

@@ -80,6 +80,12 @@ varying vec2 v_uv;
 uniform sampler2D u_texture;
 uniform float u_brightness;
 uniform float u_contrast;
+uniform float u_gamma;       // projector gamma
+uniform float u_blackLift;   // black level lift (0..0.5)
+uniform vec3  u_colorGain;   // RGB gain for color temp shift
+uniform float u_vignette;    // vignette strength 0..1
+uniform float u_hotspot;     // center hotspot 0..1
+uniform float u_projEnabled; // 0 or 1
 
 vec3 applyContrast(vec3 color, float contrastFactor) {
   return (color - 0.5) * contrastFactor + 0.5;
@@ -89,6 +95,29 @@ void main() {
   vec4 texColor = texture2D(u_texture, v_uv);
   vec3 contrasted = applyContrast(texColor.rgb, u_contrast);
   vec3 adjusted = clamp(contrasted * u_brightness, 0.0, 1.0);
+
+  // Projector preview effects
+  if (u_projEnabled > 0.5) {
+    // Color temperature shift via per-channel gain
+    adjusted *= u_colorGain;
+    adjusted = clamp(adjusted, 0.0, 1.0);
+
+    // Gamma (projector typically > 1.0)
+    float invGamma = max(0.001, 1.0 / max(0.001, u_gamma));
+    adjusted = pow(adjusted, vec3(invGamma));
+
+    // Black level lift (ambient washout)
+    adjusted = clamp(adjusted * (1.0 - u_blackLift) + vec3(u_blackLift), 0.0, 1.0);
+
+    // Vignette (edge falloff) and hotspot (center boost)
+    vec2 centered = v_uv * 2.0 - 1.0; // -1..1
+    float r = length(centered);
+    float vig = 1.0 - u_vignette * smoothstep(0.4, 1.0, r);
+    float hot = 1.0 + u_hotspot * (1.0 - smoothstep(0.0, 1.0, r)) * 0.25;
+    adjusted *= vig * hot;
+    adjusted = clamp(adjusted, 0.0, 1.0);
+  }
+
   gl_FragColor = vec4(adjusted, texColor.a);
 }
 `;
@@ -119,6 +148,14 @@ export const useProjectionRenderer = () => {
 
   const firstAspectRatioRef = useRef<number | null>(null);
   const currentAspectRef = useRef<number | null>(null);
+  const projectorRef = useRef({
+    enabled: false,
+    gamma: 1.0,
+    blackLift: 0.0,
+    colorGain: { r: 1.0, g: 1.0, b: 1.0 },
+    vignette: 0.0,
+    hotspot: 0.0
+  });
 
   const drawScene = useCallback(() => {
     const resources = resourcesRef.current;
@@ -161,6 +198,23 @@ export const useProjectionRenderer = () => {
       appliedScale: scale,
       aspectRatio: currentAspectRef.current
     });
+
+    // Set projector uniforms (queried each frame; could be cached if needed)
+    const pj = projectorRef.current;
+    const uGamma = gl.getUniformLocation(program, 'u_gamma');
+    const uBlackLift = gl.getUniformLocation(program, 'u_blackLift');
+    const uColorGain = gl.getUniformLocation(program, 'u_colorGain');
+    const uVignette = gl.getUniformLocation(program, 'u_vignette');
+    const uHotspot = gl.getUniformLocation(program, 'u_hotspot');
+    const uProjEnabled = gl.getUniformLocation(program, 'u_projEnabled');
+    if (uGamma && uBlackLift && uColorGain && uVignette && uHotspot && uProjEnabled) {
+      gl.uniform1f(uGamma, pj.gamma);
+      gl.uniform1f(uBlackLift, pj.blackLift);
+      gl.uniform3f(uColorGain, pj.colorGain.r, pj.colorGain.g, pj.colorGain.b);
+      gl.uniform1f(uVignette, pj.vignette);
+      gl.uniform1f(uHotspot, pj.hotspot);
+      gl.uniform1f(uProjEnabled, pj.enabled ? 1.0 : 0.0);
+    }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }, [adjustmentsRef]);
@@ -260,6 +314,37 @@ export const useProjectionRenderer = () => {
     [adjustmentsRef, scheduleDraw]
   );
 
+  const updateProjectorPreview = useCallback(
+    (params: {
+      enabled?: boolean;
+      gamma?: number;
+      blackLift?: number;
+      colorTempShift?: number; // -1 (warm) .. +1 (cool)
+      vignette?: number;
+      hotspot?: number;
+    }) => {
+      const next = projectorRef.current;
+      if (typeof params.enabled === 'boolean') next.enabled = params.enabled;
+      if (typeof params.gamma === 'number') next.gamma = Math.max(0.5, Math.min(params.gamma, 3.0));
+      if (typeof params.blackLift === 'number') next.blackLift = Math.max(0.0, Math.min(params.blackLift, 0.5));
+      if (typeof params.vignette === 'number') next.vignette = Math.max(0.0, Math.min(params.vignette, 1.0));
+      if (typeof params.hotspot === 'number') next.hotspot = Math.max(0.0, Math.min(params.hotspot, 1.0));
+      if (typeof params.colorTempShift === 'number') {
+        const s = Math.max(-1, Math.min(1, params.colorTempShift));
+        const r = 1 + 0.08 * s;
+        const g = 1.0;
+        const b = 1 - 0.08 * s;
+        next.colorGain = {
+          r: Math.max(0.7, Math.min(1.3, r)),
+          g: g,
+          b: Math.max(0.7, Math.min(1.3, b))
+        };
+      }
+      scheduleDraw();
+    },
+    [scheduleDraw]
+  );
+
   const initializeWebGL = useCallback(
     (canvas: HTMLCanvasElement) => {
       if (!canvas) {
@@ -268,7 +353,7 @@ export const useProjectionRenderer = () => {
 
       const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
       if (!gl) {
-        throw new Error('WebGL を初期化できませんでした。対応しているブラウザをご確認ください。');
+        throw new Error('WebGL レンダラーの初期化が完了していません');
       }
 
       resizeCanvasToDisplaySize(canvas);
@@ -289,7 +374,7 @@ export const useProjectionRenderer = () => {
         !contrastLocation ||
         !scaleLocation
       ) {
-        throw new Error('WebGL の属性またはユニフォームの取得に失敗しました');
+        throw new Error('WebGL レンダラーの初期化が完了していません');
       }
 
       const positionBuffer = gl.createBuffer();
@@ -297,7 +382,7 @@ export const useProjectionRenderer = () => {
       const texture = gl.createTexture();
 
       if (!positionBuffer || !uvBuffer || !texture) {
-        throw new Error('WebGL リソースの確保に失敗しました');
+        throw new Error('WebGL レンダラーの初期化が完了していません');
       }
 
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -377,7 +462,7 @@ export const useProjectionRenderer = () => {
     const resources = resourcesRef.current;
 
     if (!canvas || !resources || !resources.imageSize) {
-      throw new Error('プレビューが準備できていません');
+      throw new Error('WebGL レンダラーの初期化が完了していません');
     }
 
     drawScene();
@@ -434,11 +519,23 @@ export const useProjectionRenderer = () => {
       isReady,
       loadImage,
       updateAdjustments,
+      updateProjectorPreview,
       captureFrame,
       imageAspectRatio: aspectRatio,
       resetAspectRatio,
       updateAspectRatio
     }),
-    [aspectRatio, captureFrame, isReady, loadImage, resetAspectRatio, updateAdjustments, updateAspectRatio]
+    [
+      aspectRatio,
+      captureFrame,
+      isReady,
+      loadImage,
+      resetAspectRatio,
+      updateAdjustments,
+      updateProjectorPreview,
+      updateAspectRatio
+    ]
   );
 };
+
+
