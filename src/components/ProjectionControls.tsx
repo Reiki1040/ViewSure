@@ -16,6 +16,8 @@ type ProjectionControlsProps = {
   wcagClearDisabled?: boolean;
   wcagProcessing?: boolean;
   wcagProcessingMessage?: string;
+  projectorEnabled?: boolean;
+  onToggleProjector?: (enabled: boolean) => void;
 };
 
 const ProjectionControls = ({
@@ -33,7 +35,9 @@ const ProjectionControls = ({
   showWcagClearButton = false,
   wcagClearDisabled = false,
   wcagProcessing = false,
-  wcagProcessingMessage
+  wcagProcessingMessage,
+  projectorEnabled = false,
+  onToggleProjector
 }: ProjectionControlsProps) => {
   const showPageIndicator = !!pageCount && !!currentPage;
 
@@ -86,10 +90,10 @@ const ProjectionControls = ({
           <LoadingSpinner
             size="small"
             className="wcag-button__loader"
-            message={wcagProcessingMessage ?? '処理中...'}
+            message={wcagProcessingMessage ?? '解析中...'}
           />
         ) : (
-          'WCAG 適合'
+          'WCAG 解析'
         )}
       </button>
       {showWcagClearButton ? (
@@ -99,11 +103,17 @@ const ProjectionControls = ({
           disabled={disabled || wcagClearDisabled}
           onClick={onClearWcagAdjustments}
         >
-          修正をすべて削除
+          変更をすべてクリア
         </button>
       ) : null}
-      <button className="preview-button" type="button" disabled={disabled}>
-        プロジェクタープレビュー
+      <button
+        className="preview-button"
+        type="button"
+        disabled={disabled}
+        onClick={() => onToggleProjector?.(!projectorEnabled)}
+        aria-pressed={projectorEnabled}
+      >
+        {projectorEnabled ? 'プロジェクタープレビュー: ON' : 'プロジェクタープレビュー: OFF'}
       </button>
       <button className="reset-button" onClick={onReset} disabled={disabled}>
         設定をリセット

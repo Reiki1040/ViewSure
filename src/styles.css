@@ -85,6 +85,37 @@ body {
   color: rgba(52, 62, 84, 0.85);
 }
 
+/* Projector preview full-screen */
+.projector-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0a0d18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.projector-screen__viewport {
+  width: min(95vw, 1600px);
+  height: min(90vh, 900px);
+}
+
+.projector-screen__close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(180, 198, 255, 0.4);
+  background: rgba(18, 22, 36, 0.6);
+  color: #eaf0ff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .loading-spinner {
   --spinner-size: 32px;
   display: inline-flex;
