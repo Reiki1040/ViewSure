@@ -1,10 +1,13 @@
+import type { ActiveProjectContext } from '../types/projects';
+
 type TopMenuBarProps = {
-  onBackToLanding?: () => void;
+  onBackToProjects?: () => void;
   onSignOut?: () => void;
   user?: {
     name: string;
     avatarUrl?: string;
   };
+  activeProject?: Pick<ActiveProjectContext, 'folderName' | 'projectName'>;
   onOpenFile: () => void;
   onReset: () => void;
   onGoPrev: () => void;
@@ -18,9 +21,10 @@ type TopMenuBarProps = {
 };
 
 const TopMenuBar = ({
-  onBackToLanding,
+  onBackToProjects,
   onSignOut,
   user,
+  activeProject,
   onOpenFile,
   onReset,
   onGoPrev,
@@ -38,19 +42,14 @@ const TopMenuBar = ({
         <span className="top-menu__logo">ViewSure</span>
         <span className="top-menu__product">Projection Studio</span>
       </div>
-      <nav className="top-menu__actions" aria-label="主要操作">
-        {onBackToLanding ? (
-          <button type="button" className="top-menu__button top-menu__button--ghost" onClick={onBackToLanding}>
-            スタートに戻る
+      <nav className="top-menu__actions" aria-label="操作メニュー">
+        {onBackToProjects ? (
+          <button type="button" className="top-menu__button top-menu__button--ghost" onClick={onBackToProjects}>
+            プロジェクト一覧に戻る
           </button>
         ) : null}
-        <button
-          type="button"
-          className="top-menu__button top-menu__button--primary"
-          onClick={onOpenFile}
-          disabled={isBusy}
-        >
-          資料を開く
+        <button type="button" className="top-menu__button top-menu__button--primary" onClick={onOpenFile} disabled={isBusy}>
+          ファイルを開く
         </button>
         <button
           type="button"
@@ -58,30 +57,15 @@ const TopMenuBar = ({
           onClick={onDownload}
           disabled={!canDownload}
         >
-          PDF保存
+          PDFを保存
         </button>
-        <button
-          type="button"
-          className="top-menu__button"
-          onClick={onGoPrev}
-          disabled={!canGoPrev}
-        >
+        <button type="button" className="top-menu__button" onClick={onGoPrev} disabled={!canGoPrev}>
           前のページ
         </button>
-        <button
-          type="button"
-          className="top-menu__button"
-          onClick={onGoNext}
-          disabled={!canGoNext}
-        >
+        <button type="button" className="top-menu__button" onClick={onGoNext} disabled={!canGoNext}>
           次のページ
         </button>
-        <button
-          type="button"
-          className="top-menu__button"
-          onClick={onReset}
-          disabled={isBusy}
-        >
+        <button type="button" className="top-menu__button" onClick={onReset} disabled={isBusy}>
           設定をリセット
         </button>
         {onSignOut ? (
@@ -103,8 +87,18 @@ const TopMenuBar = ({
             <span className="top-menu__user-name">{user.name}</span>
           </div>
         ) : null}
+        {activeProject ? (
+          <div className="top-menu__project">
+            <span className="top-menu__project-folder" aria-label="フォルダ名">
+              {activeProject.folderName}
+            </span>
+            <span className="top-menu__project-name" aria-label="プロジェクト名">
+              {activeProject.projectName}
+            </span>
+          </div>
+        ) : null}
         <span className="top-menu__status-text">
-          {statusMessage ?? '準備完了 — ファイルを読み込んでください'}
+          {statusMessage ?? 'プロジェクトファイルを読み込んでください'}
         </span>
       </div>
     </header>
