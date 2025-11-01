@@ -6,24 +6,28 @@ import ProjectionViewport from './components/ProjectionViewport';
 import WcagPreviewPanel from './components/WcagPreviewPanel';
 import TopMenuBar from './components/TopMenuBar';
 import LandingScreen from './components/LandingScreen';
+import ProjectDashboard from './components/ProjectDashboard';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
 import { useAuth } from './context/AuthContext';
 import { useWcagHelper } from './hooks/useWcagHelper';
+import type { ActiveProjectContext, ProjectFile, ProjectFolder, TrashedProject } from './types/projects';
 
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
 const DEFAULT_WCAG_ASPECT = 9 / 16;
+const INITIAL_STATUS_MESSAGE = '�t�@�C�����A�b�v���[�h���Ă�������';
 
 type ProjectionStudioAppProps = {
-  onBackToLanding?: () => void;
+  onBackToProjects?: () => void;
+  activeProject?: ActiveProjectContext | null;
 };
 
-const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
+const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStudioAppProps) => {
   const { user, signOut } = useAuth();
   const [brightness, setBrightness] = useState(INITIAL_BRIGHTNESS);
   const [contrast, setContrast] = useState(INITIAL_CONTRAST);
-  const [statusMessage, setStatusMessage] = useState<string | null>('ファイルをアップロードしてください');
+  const [statusMessage, setStatusMessage] = useState<string | null>(INITIAL_STATUS_MESSAGE);
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const {
@@ -65,6 +69,17 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     setStatusMessage
   });
 
+  useEffect(() => {
+    if (!activeProject) {
+      return;
+    }
+    setStatusMessage((previous) => {
+      if (!previous || previous === INITIAL_STATUS_MESSAGE) {
+        return `${activeProject.projectName} を開いています。資料を読み込んでください`;
+      }
+      return previous;
+    });
+  }, [activeProject]);
   const handleFileSelected = useCallback(async (file: File) => {
     setIsLoading(true);
     setStatusMessage(null);
@@ -358,8 +373,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
 
   const handleSignOut = useCallback(() => {
     signOut();
-    onBackToLanding?.();
-  }, [onBackToLanding, signOut]);
+  }, [signOut]);
 
   useEffect(() => {
     return () => {
@@ -370,9 +384,10 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   return (
     <div className="app-root">
       <TopMenuBar
-        onBackToLanding={onBackToLanding}
+        onBackToProjects={onBackToProjects}
         onSignOut={user ? handleSignOut : undefined}
         user={user ? { name: user.name, avatarUrl: user.picture } : undefined}
+        activeProject={activeProject ? { folderName: activeProject.folderName, projectName: activeProject.projectName } : undefined}
         onOpenFile={handleOpenFileDialog}
         onReset={resetAdjustments}
         onGoPrev={goToPrevious}
@@ -494,27 +509,150 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   );
 };
 
+type AppView = 'landing' | 'projects' | 'studio';
+
+const VIEW_HASH: Record<AppView, string> = {
+  landing: '',
+  projects: '#projects',
+  studio: '#studio'
+};
+
+const parseViewFromHash = (hash: string): AppView => {
+  switch (hash) {
+    case VIEW_HASH.projects:
+      return 'projects';
+    case VIEW_HASH.studio:
+      return 'studio';
+    default:
+      return 'landing';
+  }
+};
+
+const INITIAL_PROJECT_FOLDERS: ProjectFolder[] = [
+  {
+    id: 'folder-live-events',
+    name: 'Live Events',
+    createdAt: '2025-10-05T09:00:00.000Z',
+    files: [
+      {
+        id: 'project-venue-setup',
+        name: 'Venue Setup Walkthrough',
+        category: 'Presentation',
+        updatedAt: '2025-10-30T06:45:00.000Z',
+        notes: 'Includes WCAG overlay notes'
+      },
+      {
+        id: 'project-audit-room',
+        name: 'Audit Room Lighting',
+        category: 'Presentation',
+        updatedAt: '2025-10-24T14:20:00.000Z',
+        notes: 'Contrast presets saved'
+      }
+    ]
+  },
+  {
+    id: 'folder-training',
+    name: 'Training',
+    createdAt: '2025-09-18T11:30:00.000Z',
+    files: [
+      {
+        id: 'project-onboarding',
+        name: 'Onboarding Tutorial',
+        category: 'Import',
+        updatedAt: '2025-10-18T08:10:00.000Z',
+        notes: 'PDF imported from client template'
+      }
+    ]
+  }
+];
+
+const createId = (prefix: string) => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const App = () => {
-  const [showLanding, setShowLanding] = useState(() => {
+  const { user } = useAuth();
+  const [view, setView] = useState<AppView>(() => {
     if (typeof window === 'undefined') {
-      return true;
+      return 'landing';
     }
-    return window.location.hash !== '#app';
+    return parseViewFromHash(window.location.hash);
   });
-  const hasLandingHistoryRef = useRef(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<number | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [folders, setFolders] = useState<ProjectFolder[]>(() =>
+    INITIAL_PROJECT_FOLDERS.map((folder) => ({
+      ...folder,
+      files: [...folder.files]
+    }))
+  );
+  const [trashedProjects, setTrashedProjects] = useState<TrashedProject[]>([]);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(() =>
+    INITIAL_PROJECT_FOLDERS.length > 0 ? INITIAL_PROJECT_FOLDERS[0].id : null
+  );
+  const [activeProject, setActiveProject] = useState<ActiveProjectContext | null>(null);
+  const [isGuestSession, setIsGuestSession] = useState(false);
+
+  const updateLocationForView = useCallback((next: AppView) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const targetHash = VIEW_HASH[next];
+    if (!targetHash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      return;
+    }
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+    }
+  }, []);
+
+  const applyView = useCallback(
+    (next: AppView) => {
+      setView(next);
+      if (next === 'landing') {
+        setIsGuestSession(false);
+      }
+      if (next !== 'studio') {
+        setActiveProject(null);
+      }
+      updateLocationForView(next);
+    },
+    [setIsGuestSession, updateLocationForView]
+  );
+
+  const navigateTo = useCallback(
+    (next: AppView) => {
+      if (next === view) {
+        return;
+      }
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+      setIsTransitioning(true);
+      transitionTimeoutRef.current = window.setTimeout(() => {
+        transitionTimeoutRef.current = null;
+        setIsTransitioning(false);
+        applyView(next);
+      }, 250);
+    },
+    [applyView, view]
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
     const handleHashChange = () => {
-      setShowLanding(window.location.hash !== '#app');
-      if (window.location.hash !== '#app') {
-        hasLandingHistoryRef.current = false;
-        setIsTransitioning(false);
+      const nextView = parseViewFromHash(window.location.hash);
+      setView(nextView);
+      if (nextView !== 'studio') {
+        setActiveProject(null);
       }
+      setIsTransitioning(false);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => {
@@ -523,49 +661,15 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    if (!showLanding) {
-      const timer = window.setTimeout(() => {
-        setIsTransitioning(false);
-      }, 500);
-      return () => {
-        window.clearTimeout(timer);
-      };
-    }
-    setIsTransitioning(false);
-    return undefined;
-  }, [showLanding]);
-
-  const handleEnterApp = useCallback(() => {
-    if (isTransitioning) {
-      return;
-    }
-    setIsTransitioning(true);
-    if (typeof window !== 'undefined' && window.location.hash !== '#app') {
-      window.location.hash = 'app';
-      hasLandingHistoryRef.current = true;
-    }
-    if (transitionTimeoutRef.current !== null) {
-      window.clearTimeout(transitionTimeoutRef.current);
-      transitionTimeoutRef.current = null;
-    }
-    transitionTimeoutRef.current = window.setTimeout(() => {
-      setShowLanding(false);
-      transitionTimeoutRef.current = null;
-    }, 250);
-  }, [isTransitioning]);
-
-  const handleBackToLanding = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      if (window.location.hash === '#app' && hasLandingHistoryRef.current) {
-        window.history.back();
-      } else {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        hasLandingHistoryRef.current = false;
+    if (!user && !isGuestSession && view !== 'landing') {
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+        transitionTimeoutRef.current = null;
       }
+      setIsTransitioning(false);
+      applyView('landing');
     }
-    setIsTransitioning(false);
-    setShowLanding(true);
-  }, []);
+  }, [applyView, isGuestSession, user, view]);
 
   useEffect(() => {
     return () => {
@@ -575,17 +679,129 @@ const App = () => {
     };
   }, []);
 
+  const handleEnterWorkspace = useCallback(() => {
+    setIsGuestSession(!user);
+    navigateTo('projects');
+  }, [navigateTo, user]);
+
+  const handleBackToProjects = useCallback(() => {
+    navigateTo('projects');
+  }, [navigateTo]);
+
+  const handleSelectFolder = useCallback((folderId: string | null) => {
+    setActiveFolderId(folderId);
+  }, []);
+
+  const handleCreateFolder = useCallback((folderName: string) => {
+    const trimmed = folderName.trim();
+    if (!trimmed) {
+      return;
+    }
+    const newFolder: ProjectFolder = {
+      id: createId('folder'),
+      name: trimmed,
+      createdAt: new Date().toISOString(),
+      files: []
+    };
+    setFolders((previous) => [...previous, newFolder]);
+    setActiveFolderId(newFolder.id);
+  }, []);
+
+  const handleCreateProject = useCallback((folderId: string, projectName: string) => {
+    const trimmed = projectName.trim();
+    if (!trimmed) {
+      return;
+    }
+    const newProject: ProjectFile = {
+      id: createId('project'),
+      name: trimmed,
+      category: 'Draft',
+      updatedAt: new Date().toISOString(),
+      notes: ''
+    };
+    setFolders((previous) =>
+      previous.map((folder) =>
+        folder.id === folderId ? { ...folder, files: [...folder.files, newProject] } : folder
+      )
+    );
+  }, []);
+
+  const handleDeleteProject = useCallback(
+    (folderId: string, projectId: string) => {
+      const sourceFolder = folders.find((folder) => folder.id === folderId);
+      const sourceProject = sourceFolder?.files.find((file) => file.id === projectId);
+
+      setFolders((previous) =>
+        previous.map((folder) =>
+          folder.id === folderId ? { ...folder, files: folder.files.filter((file) => file.id !== projectId) } : folder
+        )
+      );
+
+      if (sourceFolder && sourceProject) {
+        const trashed: TrashedProject = {
+          id: sourceProject.id,
+          name: sourceProject.name,
+          category: sourceProject.category,
+          notes: sourceProject.notes,
+          updatedAt: sourceProject.updatedAt,
+          deletedAt: new Date().toISOString(),
+          sourceFolderId: sourceFolder.id,
+          sourceFolderName: sourceFolder.name
+        };
+        setTrashedProjects((previous) => [trashed, ...previous]);
+      }
+
+      setActiveProject((current) => {
+        if (current && current.projectId === projectId) {
+          return null;
+        }
+        return current;
+      });
+    },
+    [folders]
+  );
+
+  const handlePurgeProject = useCallback((projectId: string) => {
+    setTrashedProjects((previous) => previous.filter((item) => item.id !== projectId));
+  }, []);
+
+  const handleEmptyTrash = useCallback(() => {
+    setTrashedProjects([]);
+  }, []);
+
+  const handleOpenProject = useCallback(
+    (context: ActiveProjectContext) => {
+      setActiveProject(context);
+      setActiveFolderId(context.folderId);
+      navigateTo('studio');
+    },
+    [navigateTo]
+  );
+
   return (
     <>
-      {showLanding ? (
-        <LandingScreen onStart={handleEnterApp} />
+      {view === 'landing' ? (
+        <LandingScreen onStart={handleEnterWorkspace} />
+      ) : view === 'projects' ? (
+        <ProjectDashboard
+          folders={folders}
+          trashedProjects={trashedProjects}
+          activeFolderId={activeFolderId}
+          onSelectFolder={handleSelectFolder}
+          onCreateFolder={handleCreateFolder}
+          onCreateProject={handleCreateProject}
+          onOpenProject={handleOpenProject}
+          onDeleteProject={handleDeleteProject}
+          onPurgeProject={handlePurgeProject}
+          onEmptyTrash={handleEmptyTrash}
+        />
       ) : (
-        <ProjectionStudioApp onBackToLanding={handleBackToLanding} />
+        <ProjectionStudioApp onBackToProjects={handleBackToProjects} activeProject={activeProject} />
       )}
       {isTransitioning ? (
         <div className="transition-overlay" role="status" aria-live="polite">
           <div className="transition-overlay__spinner" aria-hidden="true" />
-          <p className="transition-overlay__message">ViewSure を起動しています...</p>
+          <p className="transition-overlay__message">ViewSure を読み込み中です...</p>
         </div>
       ) : null}
     </>
@@ -593,4 +809,3 @@ const App = () => {
 };
 
 export default App;
-
