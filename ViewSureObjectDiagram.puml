@@ -1,0 +1,90 @@
+@startuml
+skinparam packageStyle rect
+skinparam object {
+  BackgroundColor Snow
+  BorderColor DimGray
+}
+
+object "App\n(React ルート)" as App {
+  state showLanding : boolean
+}
+object "ProjectionStudioApp\n(メイン画面)" as Studio {
+  state currentFrame : number
+  state statusMessage : string
+  state projectorEnabled : boolean
+}
+object "LandingScreen" as Landing
+
+App *-- Studio : 描画
+App *-- Landing : 描画
+
+object "TopMenuBar" as Menu
+object "FileUploader" as Uploader {
+  state statusMessage : string
+}
+object "ProjectionControls" as Controls {
+  state brightness : number
+  state contrast : number
+}
+object "ProjectionViewport" as Viewport {
+  state canvasRef : HTMLCanvasElement
+}
+object "WcagPreviewPanel" as Preview
+object "WcagSummary" as Summary
+
+Studio *-- Menu
+Studio *-- Uploader
+Studio *-- Controls
+Studio *-- Viewport
+Studio *-- Preview
+Studio *-- Summary
+
+object "useProjectionRenderer\n(WebGL レンダラ)" as Renderer {
+  state canvasRef : ref<HTMLCanvasElement>
+  state isReady : boolean
+  state imageAspectRatio : number
+}
+object "useWcagHelper\n(WCAG 解析)" as Helper {
+  state analysis : DocumentAnalysis
+  state fontAdjustments : FontAdjustments
+}
+object "AuthContext\n(Google 認証)" as AuthCtx {
+  state user : GoogleUserProfile
+  state status : AuthStatus
+}
+
+Studio o-- Renderer : 利用
+Studio o-- Helper : 利用
+App o-- AuthCtx : 利用
+
+object "ProjectionAsset" as Asset {
+  state pageCount : number
+  getFrame(index)
+}
+object "PdfAsset" as PdfAsset
+object "PptxAsset" as PptxAsset
+object "ImageAsset" as ImageAsset
+
+Renderer o-- Asset : フレーム取得
+Asset <|- PdfAsset
+Asset <|- PptxAsset
+Asset <|- ImageAsset
+
+Uploader ..> "fileLoader.ts" : loadProjectionAsset()
+Renderer ..> "toneMappingWasm" : brightnessOffset()/contrastFactor()
+Helper ..> "analyzer.ts" : analyzeProjectionAsset()
+
+object "DocumentAnalysis" as Analysis {
+  state slides : SlideMetrics[]
+  state issues : WcagIssue[]
+}
+object "TextRenderingModel" as TextModel {
+  state slides : TextSlide[]
+}
+
+Helper *-- Analysis
+Helper *-- TextModel
+Preview ..> TextModel : オーバーレイ表示
+Summary ..> Analysis : サマリ表示
+
+@enduml
