@@ -39,6 +39,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
   } = useProjectionRenderer();
   const [asset, setAsset] = useState<ProjectionAsset | null>(null);
   const [currentFrame, setCurrentFrame] = useState(1);
+  const [pageInputValue, setPageInputValue] = useState('1');
   const latestAdjustmentsRef = useRef({ brightness: INITIAL_BRIGHTNESS, contrast: INITIAL_CONTRAST });
   const fileUploaderRef = useRef<FileUploaderHandle | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -75,6 +76,7 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
       console.debug('[App] New file selected, clearing aspect ratio state');
       const projectionAsset = await loadProjectionAsset(file);
       setCurrentFrame(1);
+      setPageInputValue('1');
       setAsset(projectionAsset);
       setActiveFileName(file.name);
       setStatusMessage(
@@ -274,6 +276,22 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
     }
   }, [canGoNext, currentFrame, handlePageChange]);
 
+  useEffect(() => {
+    setPageInputValue(String(currentFrame));
+  }, [currentFrame]);
+
+  const handlePageInputCommit = useCallback(() => {
+    const total = asset?.pageCount ?? 0;
+    if (total < 1) {
+      return;
+    }
+    const parsed = Number(pageInputValue);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    handlePageChange(parsed);
+  }, [asset, pageInputValue, handlePageChange]);
+
   // プロジェクタープレビュー（投影シミュレーション）トグル
   const handleToggleProjector = useCallback(
     (enabled: boolean) => {
@@ -421,6 +439,42 @@ const ProjectionStudioApp = ({ onBackToLanding }: ProjectionStudioAppProps) => {
             aspectRatio={effectiveViewportAspect}
             textOverlay={null}
           />
+          {pageCount > 1 ? (
+          <div className="page-slider" aria-label="ページ選択">
+            <label className="page-slider__label" htmlFor="page-slider-main">ページ</label>
+            <input
+              id="page-slider-main"
+              type="range"
+              min={1}
+              max={pageCount}
+              step={1}
+              value={currentFrame}
+              onChange={(event) => handlePageChange(Number(event.target.value))}
+            />
+            <div className="page-slider__value">
+              {currentFrame} / {pageCount}
+            </div>
+            <div className="page-slider__jump">
+              <input
+                type="number"
+                min={1}
+                max={pageCount}
+                value={pageInputValue}
+                onChange={(event) => setPageInputValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handlePageInputCommit();
+                  }
+                }}
+                aria-label="ページ番号を入力"
+              />
+              <button type="button" onClick={handlePageInputCommit} className="page-slider__jump-button">
+                移動
+              </button>
+            </div>
+          </div>
+        ) : null}
           <WcagPreviewPanel
             overlay={textOverlay}
             aspectRatio={effectiveViewportAspect}
