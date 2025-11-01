@@ -1,0 +1,136 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rect
+
+package "UI コンポーネント" {
+  class App {
+    +showLanding: boolean
+    +setShowLanding(...)
+  }
+
+  class ProjectionStudioApp {
+    +currentFrame: number
+    +handlePageChange(page)
+    +handleToggleProjector(enabled)
+  }
+
+  class LandingScreen {
+    +onStart(): void
+  }
+
+  class TopMenuBar {
+    +onOpenFile()
+    +onDownload()
+    +onGoPrev()
+    +onGoNext()
+  }
+
+  class FileUploader {
+    +onFileSelected(file)
+    +openFileDialog()
+  }
+
+  class ProjectionControls {
+    +onBrightnessChange(value)
+    +onContrastChange(value)
+    +onToggleProjector(enabled)
+  }
+
+  class ProjectionViewport {
+    +canvasRef: Ref<HTMLCanvasElement>
+    +onGoPrev()
+    +onGoNext()
+  }
+
+  class WcagPreviewPanel {
+    +overlay?: TextOverlayPayload
+  }
+
+  class WcagSummary {
+    +analysis?: DocumentAnalysis
+  }
+}
+
+package "フック / 状態管理" {
+  class useProjectionRenderer {
+    +canvasRef: Ref<HTMLCanvasElement>
+    +loadImage(source)
+    +captureFrame(): CaptureFrameResult
+    +updateProjectorPreview(params)
+  }
+
+  class useWcagHelper {
+    +analysis?: DocumentAnalysis
+    +applyAdjustments()
+    +clearAdjustments()
+    +getTextOverlayPayload(index)
+  }
+
+  class AuthContext {
+    +user?: GoogleUserProfile
+    +signInWithGoogle()
+    +signOut()
+  }
+}
+
+package "アセット" {
+  interface ProjectionAsset {
+    +pageCount: number
+    +getFrame(index): TexImageSource
+    +hasFrame?(index): boolean
+    +dispose?()
+  }
+
+  class PdfAsset
+  class PptxAsset
+  class ImageAsset
+}
+
+package "ユーティリティ" {
+  class fileLoader
+  class pdf
+  class ppt
+  class toneMappingWasm
+  class analyzer
+}
+
+package "WCAG モデル" {
+  class DocumentAnalysis {
+    +pageCount: number
+    +slides: SlideMetrics[]
+    +issues: WcagIssue[]
+  }
+
+  class TextRenderingModel {
+    +slides: TextSlide[]
+  }
+}
+
+App --> ProjectionStudioApp : 描画
+App --> LandingScreen
+ProjectionStudioApp --> TopMenuBar
+ProjectionStudioApp --> FileUploader
+ProjectionStudioApp --> ProjectionControls
+ProjectionStudioApp --> ProjectionViewport
+ProjectionStudioApp --> WcagPreviewPanel
+ProjectionStudioApp --> WcagSummary
+
+ProjectionStudioApp ..> useProjectionRenderer : 利用
+ProjectionStudioApp ..> useWcagHelper : 利用
+App ..> AuthContext : 利用
+
+FileUploader ..> fileLoader : loadProjectionAsset()
+useProjectionRenderer ..> toneMappingWasm
+useProjectionRenderer ..> ProjectionAsset
+useWcagHelper ..> analyzer
+useWcagHelper ..> DocumentAnalysis
+useWcagHelper ..> TextRenderingModel
+
+ProjectionAsset <|.. PdfAsset
+ProjectionAsset <|.. PptxAsset
+ProjectionAsset <|.. ImageAsset
+
+pdf ..> PdfAsset : createPdfRenderer()
+ppt ..> PptxAsset : renderPptxSlideToCanvas()
+
+@enduml

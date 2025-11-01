@@ -1,112 +1,107 @@
 # ViewSure Projection Preview
 
-ブラウザ上でプレゼン資料をプロジェクター出力風に確認できる React / TypeScript 製プレビューアです。PDF・PowerPoint・主要画像フォーマット（PNG / JPEG / WEBP / HEIC）を読み込み、カスタム WebGL シェーダーによる明るさ・コントラスト調整をリアルタイムに適用します。  
-プロトタイプ用途を想定した Vite ベースの開発用構成になっています。
+ViewSure は、プレゼン資料を投影する前に、明るさ・コントラスト・WCAG 適合状況を事前にチェックできるプレビューアです。PDF・PowerPoint・画像ファイルを読み込み、WebGL を用いたリアルタイム補正や WCAG 準拠チェック、PDF への書き出しまでをブラウザ上だけで完結させます。
 
-## 特徴
+## 主な機能
+- **複数フォーマット対応**: PDF / PPTX / PNG / JPEG / WEBP / HEIC をブラウザ上で読み込み可能。
+- **WebGL レンダリング**: 明るさ・コントラストをリアルタイム調整。投影機シミュレーション (ガンマ / 黒レベル / ビネット / ホットスポット) の ON/OFF 切り替えが可能。
+- **WCAG 解析と提案**: PDF 内テキストの抽出、平均輝度・コントラスト比・フォントサイズを解析し、改善ポイントを可視化。推奨値に基づき自動調整を適用することもできます。
+- **プレビュー UX**: メイン表示・WCAG プレビューを上下に常時表示し、ページスライダー・ページ番号入力・矢印キーで直感的にページ移動。
+- **PDF 書き出し**: 補正後の全ページを PNG へ描画し、1 本の PDF として保存。
+- **Google サインイン (任意)**: `VITE_GOOGLE_CLIENT_ID` を設定すると Google アカウントでのサインインが有効化されます。
 
-- **React + TypeScript + Vite** … UI と状態管理は React 18、厳格な型付けと DX を TypeScript 5、開発サーバーとビルドは Vite 5 が担当します。
-- **WebGL レンダラー** … 生 WebGL とカスタムシェーダーで輝度／コントラストを適用。描画ロジックは `useProjectionRenderer` フックで再利用可能に抽象化。
-- **WASM アシスト** … `src/wasm/tone_mapping.wasm` を WebAssembly として読み込み、スライダー値からシェーダー向け係数を計算。軽量なトーンマッピングを高速に実行。
-- **PDF マルチページ** … `pdfjs-dist` の legacy ビルドを使用し、必要になったページだけオンデマンドで Canvas に描画。ページ移動のたびにテクスチャを差し替えます。
-- **PowerPoint (`.pptx`)** … `pptx-preview` を CDN から動的ロードし、SVG → Canvas に変換して WebGL テクスチャ化。追加のバックエンドを持たない構成です。
-- **HEIC / HEIF** … `heic2any` でブラウザ内変換し、ImageBitmap もしくは Canvas として読み込んで投影。
-- **ドラッグ＆ドロップ** … PDF / PPTX / 画像ファイルを直接アップロード可能。
-- **暗所風 UI** … プロジェクタープレビューに合うダークトーンの UI。
+## 対応フォーマットと実装メモ
+| 種別 | 利用ライブラリ / 実装 | 備考 |
+|------|------------------------|------|
+| PDF | `pdfjs-dist/legacy` | Web Worker を `?url` でバンドル。テキスト抽出にも利用。 |
+| PPTX | `pptx-preview` (jsDelivr CDN) | SVG を Canvas へ描画して WebGL テクスチャとして利用。ネットワーク接続が必須。 |
+| 画像 (PNG/JPEG/WEBP) | ブラウザ標準 API | そのまま `TexImageSource` としてロード。 |
+| HEIC/HEIF | `heic2any` | PNG に変換後に描画。変換はクライアント側で実行されるため大容量ファイルでは時間がかかります。 |
 
-## 技術スタック（詳細）
+## 技術スタック
+- React 18 / TypeScript 5 / Vite 5
+- WebGL + GLSL / `useProjectionRenderer` フックによる描画
+- WebAssembly (`src/wasm/tone_mapping.wasm`) で投影機向けトーンマッピングを計算
+- `pdfjs-dist`, `pptx-preview`, `heic2any`, `jspdf`
 
-| 分類 | 採用技術 | 説明 |
-|------|----------|------|
-| フロントエンド | React 18 / TypeScript 5 | 関数コンポーネントとカスタムフックで UI と状態を構成。 |
-| 開発基盤 | Vite 5, @vitejs/plugin-react | 高速な HMR と ESBuild ベースのビルド。 |
-| PDF レンダリング | pdfjs-dist (legacy) | WebWorker 付きの pdf.js を Vite 互換の `?url` 形式で読込み。ページごとに Canvas を生成。 |
-| PPTX レンダリング | pptx-preview (CDN) | jsDelivr から動的 import。SVG 化したスライドを Canvas へ変換。 |
-| 画像変換 | heic2any | HEIC/HEIF → PNG 変換をブラウザ側で実行。 |
-| WebGL | 生 WebGL + カスタム GLSL | 頂点・フラグメントシェーダーで画像表示と補正。アスペクト比調整、UV 反転を実装。 |
-| WASM | `tone_mapping.wasm` | 明るさ／コントラスト係数の演算を Wasm で実行し、高頻度のスライダー操作に対応。 |
-| スタイル | CSS (ダークテーマ) | `src/styles.css` にてグラスモーフィズム寄りの UI を定義。 |
-
-## 開発環境の前提
-
-- Node.js 16 以上（推奨は 18 LTS）
-- npm または互換パッケージマネージャー（pnpm / yarn を使う場合はコマンドを読み替えてください）
-- 画像変換を伴うためブラウザは最新の Chrome / Edge / Safari を想定
-  - PPTX レンダリング用の `pptx-preview` は CDN から読み込むため、オフラインでは動作しません
+## 動作環境
+- Node.js 18 LTS 以上
+- 最新の Chromium 系ブラウザ (WebGL が利用できること)
+- PPTX を扱う場合はオンライン環境 (jsDelivr の CDN を利用)
 
 ## セットアップ
-
 ```bash
 # 依存関係のインストール
 npm install
 
-# 開発サーバー起動
+# 開発サーバの起動
 npm run dev
+
+# 型チェック
+npm run typecheck
+
+# 本番ビルド
+npm run build
+
+# ビルド結果の確認
+npm run preview
 ```
 
-デフォルトでは `http://localhost:5173/` が開きます。Safari の “HTTP-Only” モードを使用している場合は、
-
-1. `certs/localhost-cert.pem` と `certs/localhost-key.pem` を用意（例: `mkcert`）  
-2. `npm run dev` を再起動 → Vite が自動的に HTTPS で起動  
-
-ブラウザに自己署名証明書を信頼させてアクセスしてください。
+### HTTPS 開発サーバ (任意)
+Safari など HTTPS が必須のブラウザ向けに、`certs/localhost-cert.pem` と `certs/localhost-key.pem` を配置すると Vite が自動で HTTPS を有効にします。証明書は `mkcert` などで生成してください。
 
 ## 使い方
+1. **資料を開く**: 左上の「資料を開く」ボタンまたはアップロードエリアにドラッグ&ドロップ。
+2. **プレビュー閲覧**: 上段がメインプレビュー、下段が WCAG プレビュー。読み込み中はスピナーを表示します。
+3. **ページ移動**:
+   - ページスライダーのドラッグ
+   - ページ番号入力欄に数値を入力し Enter または「移動」ボタン
+   - メインプレビュー付近の Prev / Next ボタン
+   - キーボードの ← / → キー
+4. **明るさ・コントラスト調整**: 左ペインのスライダーでリアルタイム調整。リセットボタンで初期値に戻します。
+5. **投影シミュレーション**: 「プロジェクタープレビュー」ボタンで ON/OFF を切り替えます。
+6. **WCAG 解析**: 「WCAG 解析」ボタンで実行。解析結果は WCAG プレビューおよびサマリで確認。必要に応じて「変更をすべてクリア」で元に戻せます。
+7. **PDF 保存**: 上部メニューの「PDF保存」で補正後の全ページを PDF としてダウンロードできます。
 
-1. 左側のアップローダーにファイルをドロップ、またはクリックして選択  
-   - 対応形式: PDF / PPTX / PNG / JPEG / WEBP / HEIC
-2. 読み込み完了後、右側キャンバスにプレビューが表示されます
-3. 画面左右の “Prev / Next” ボタンでページを切り替え（複数ページの場合）
-4. 「明るさ」「コントラスト」のスライダーで投影環境を調整
-5. 「設定をリセット」で初期値（明るさ 100%、コントラスト 0%）に戻します
-
-## ファイル構成（主要箇所）
-
+## ディレクトリ構成 (抜粋)
 ```
-├── src/
-│   ├── App.tsx                # UI 構成と状態管理
-│   ├── components/
-│   │   ├── FileUploader.tsx
-│   │   ├── ProjectionControls.tsx
-│   │   └── ProjectionViewport.tsx
-│   ├── hooks/
-│   │   └── useProjectionRenderer.ts # WebGL 初期化・描画
-│   ├── utils/
-│   │   ├── fileLoader.ts      # PDF/PPTX/画像の読み込みと変換
-│   │   ├── pdf.ts             # pdf.js を使ったページ描画
-│   │   ├── ppt.ts             # pptx-preview をCDN経由で読み込み
-│   │   └── toneMappingWasm.ts # WebAssembly モジュールのラッパー
-│   └── wasm/
-│       └── tone_mapping.wasm  # 輝度・コントラスト調整用 WASM
-├── vite.config.ts
-├── package.json
-└── README.md
+ViewSure/
+├─ src/
+│  ├─ App.tsx                # 画面全体の状態管理とレイアウト
+│  ├─ components/            # UI コンポーネント
+│  ├─ hooks/
+│  │  └─ useProjectionRenderer.ts # WebGL 描画ロジック
+│  ├─ utils/
+│  │  ├─ fileLoader.ts       # 各フォーマットの読み込み処理
+│  │  ├─ pdf.ts / ppt.ts      # PDF / PPTX レンダリング補助
+│  │  └─ toneMappingWasm.ts  # WASM ローダー
+│  ├─ context/AuthContext.tsx # Google サインイン管理
+│  └─ wasm/tone_mapping.wasm
+├─ public/_redirects          # SPA 向けリダイレクト設定
+├─ certs/                     # HTTPS 用ローカル証明書 (任意)
+├─ vite.config.ts
+└─ package.json
 ```
 
-## 技術メモ
+## WCAG 解析フロー
+1. PDF (または対応フォーマット) からスライド画像を Canvas に描画。
+2. PDF の場合はテキストコンテンツを抽出し、フォントサイズや矩形領域を推定。
+3. スライドの平均輝度、文字周辺のコントラスト、フォントサイズを算出。
+4. 違反度合いに応じて Warning/Error を記録し、推奨の明るさ・コントラスト・フォント倍率を提示。
+5. 必要に応じて自動調整を適用し、WCAG プレビューに反映します。
 
-- WebGL のテクスチャは `UNPACK_FLIP_Y_WEBGL` を使わず頂点シェーダー側で UV を反転。PDF/画像を期待通りに表示します。
-- PDF は `pdfjs-dist/legacy` を採用しワーカーを動的読み込み（Vite 対応のため `?url` を使用）。
-- PPTX は npm パッケージではなく jsDelivr から静的ファイルをロードします。将来的に自前でホストする場合は `src/utils/ppt.ts` の `CDN_SOURCES` を書き換えてください。
-- HEIC 変換はブラウザ側で行うため大きな画像は時間がかかります。必要であれば Web Worker へのオフロードを検討してください。
-- WASM (`src/wasm/tone_mapping.wasm`) は brightness/contrast 操作の補助計算を実装。`ToneMappingExports` がフェッチ後に再利用されます。
-
-## よくあるトラブル
-
-| 症状 | 対応策 |
-|------|--------|
-| `Failed to resolve import "heic2any"` | `npm install` を再実行。初回はパッケージが未取得です。 |
-| PPTX が表示されない | ネットワーク接続を確認。CDN ブロック環境では自前ホスティングが必要です。 |
-| Safari で `HTTPS-Only` エラー | 前述の通り mkcert 等でローカル証明書を発行して HTTPS でアクセスする。 |
+## 制限事項・注意点
+- WebGL 非対応ブラウザでは使用できません。`canvas.getContext('webgl')` が取得できる環境を想定しています。
+- PPTX 読み込みは CDN 依存のため、オフライン環境では動作しません。
+- HEIC 変換はクライアント側で実行するため、大容量ファイルでは処理に時間がかかる場合があります。
+- PDF 解析はテキストが埋め込まれていることを前提としています。アウトライン化された PDF では WCAG 解析が十分に行えない場合があります。
 
 ## 今後の拡張アイデア
-
-- PDF/PPTX のページサムネイル表示、任意ページジャンプ
-- 投影スクリーンのアスペクト比・解像度プリセット
-- プロジェクター固有 LUT / カラープロファイルの適用
-- Web Worker を利用したファイル変換処理の分離
-- 永続ストレージ（IndexedDB 等）へのキャッシュ保存
+- キーボードショートカットの追加 (明るさ変更・解析実行など)
+- 輝度・コントラスト以外の投影補正 (色温度プリセット、スクリーン種類別プロファイル)
+- 解析結果のエクスポート (レポート PDF / JSON)
+- HEIC 変換や PDF レンダリングの Web Worker 化によるレスポンス改善
+- オフライン利用向けに PPTX レンダラをバンドルする構成の検討
 
 ---
-
-このリポジトリは試作段階のため、仕様は予告なく変更される場合があります。フィードバックや改善案があれば issue / PR でお知らせください。
+何か不具合や改善提案があれば issue / PR でお知らせください。ViewSure がより良い投影体験を提供できるよう、引き続き改善していきます。

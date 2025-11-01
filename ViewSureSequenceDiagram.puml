@@ -1,43 +1,53 @@
-@startuml ViewSure_Sequence
-
-actor User
-participant "ProjectionStudioApp\n(App.tsx)" as App
-participant "FileUploader\n(FileUploader.tsx)" as Uploader
-participant "ProjectionAsset\n(fileLoader.ts)" as Asset
-participant "WebGL Renderer\n(useProjectionRenderer)" as Renderer
-participant "WCAG Helper\n(useWcagHelper)" as Wcag
-participant "Analyzer\n(wcag/analyzer.ts)" as Analyzer
+@startuml
+actor ユーザー
+participant "App\n(React ルート)" as App
+participant "ProjectionStudioApp" as Studio
+participant "FileUploader" as Uploader
+participant "fileLoader.ts" as Loader
+participant "useProjectionRenderer" as Renderer
+participant "useWcagHelper" as Helper
+participant "TopMenuBar" as Menu
+participant "ProjectionViewport" as Viewport
 participant "WcagPreviewPanel" as Preview
 
-== 資料読み込み ==
-User -> App : アプリ画面を開く
-App -> Uploader : ファイル選択ダイアログを開く
-User -> Uploader : ファイルを選択/ドロップ
-Uploader -> App : onFileSelected(file)
-App -> Asset : loadProjectionAsset(file)
-Asset --> App : ProjectionAsset {getFrame, getTextContent, ...}
-App -> Renderer : loadImage(asset.getFrame(0))
-Renderer --> App : 初回フレーム描画完了
-App -> Wcag : setBrightness / setContrast
+== アプリ起動 ==
+ユーザー -> App : サイトにアクセス
+App -> App : showLanding をチェック
+App -> Studio : ProjectionStudioApp を描画
+Studio -> Helper : WCAG 解析の初期化
+Helper -> Studio : 初期ステータスを返す
 
-== ページ切替 ==
-User -> App : Prev/Next ボタン
-App -> Renderer : asset.getFrame(n) \\n→ loadImage()
-Renderer --> App : 描画更新
+== 資料の読み込み ==
+ユーザー -> Menu : 資料を開く
+Menu -> Uploader : openFileDialog()
+ユーザー -> Uploader : ファイルを選択
+Uploader -> Loader : loadProjectionAsset(file)
+Loader --> Uploader : ProjectionAsset
+Uploader -> Studio : onFileSelected(asset)
+Studio -> Renderer : resetAspectRatio()
+Studio -> Renderer : loadImage(asset.getFrame(0))
+Renderer --> Studio : 読み込み完了 (isReady=true)
+Studio -> Helper : analyzeProjectionAsset(asset)
+Helper --> Studio : DocumentAnalysis + TextModel
 
-== WCAG 解析 ==
-User -> App : 「WCAG適合」ボタン
-App -> Wcag : applyAdjustments()
-Wcag -> Analyzer : analyzeProjectionAsset(asset)
-Analyzer --> Wcag : DocumentAnalysis + issues
-Wcag -> App : setBrightness / setContrast
-Wcag --> Preview : TextOverlayPayload 更新
-Preview --> User : 調整後テキストプレビュー表示
+== プレビュー操作 ==
+ユーザー -> Controls : 明るさ・コントラスト変更
+Controls -> Studio : setBrightness / setContrast
+Studio -> Renderer : updateAdjustments()
+Renderer --> Viewport : WebGL 再描画
 
-== PDF 書き出し ==
-User -> App : 「PDF保存」ボタン
-App -> Renderer : 各ページ loadImage()/captureFrame()
-App -> Asset : getFrame(i) (繰り返し)
-App --> User : 生成したPDFをダウンロード
+== ページ移動 ==
+ユーザー -> Controls : スライダー/入力でページ指定
+Controls -> Studio : handlePageChange(page)
+Studio -> Renderer : asset.getFrame(page)
+Renderer --> Viewport : 新しいフレームを表示
+Studio -> Helper : getTextOverlayPayload(page)
+Helper --> Preview : WCAG オーバーレイを更新
+
+== PDF 保存 ==
+ユーザー -> Menu : PDF保存
+Menu -> Studio : handleDownloadCurrentView()
+Studio -> Renderer : captureFrame() をページ数分呼び出し
+Studio -> "jspdf" : PDF を生成・保存
 
 @enduml
