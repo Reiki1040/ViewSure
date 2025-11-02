@@ -128,7 +128,7 @@ const ProjectDashboard = ({
     onCreateProject(activeFolder.id, name.trim());
   };
 
-  const handleProjectDoubleClick = (file: ProjectFile, folder: ProjectFolder) => {
+  const handleProjectOpen = (file: ProjectFile, folder: ProjectFolder) => {
     if (isTrashView) {
       return;
     }
@@ -380,8 +380,7 @@ const ProjectDashboard = ({
                     <tr
                       key={file.id}
                       className={selectedProjectId === file.id ? 'is-selected' : ''}
-                      onClick={() => setSelectedProjectId(file.id)}
-                      onDoubleClick={() => handleProjectDoubleClick(file, activeFolder)}
+                      onClick={() => handleProjectOpen(file, activeFolder)}
                     >
                       <td data-title="Name">{file.name}</td>
                       <td data-title="Category">{file.category}</td>
