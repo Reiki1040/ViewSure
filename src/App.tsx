@@ -18,6 +18,14 @@ const INITIAL_CONTRAST = 0;
 const DEFAULT_WCAG_ASPECT = 9 / 16;
 const INITIAL_STATUS_MESSAGE = '�t�@�C�����A�b�v���[�h���Ă�������';
 
+const WORKSPACE_STORAGE_PREFIX = 'viewsure.workspace';
+
+type WorkspaceSnapshot = {
+  folders?: ProjectFolder[];
+  trashedProjects?: TrashedProject[];
+  activeFolderId?: string | null;
+};
+
 type ProjectionStudioAppProps = {
   onBackToProjects?: () => void;
   activeProject?: ActiveProjectContext | null;
@@ -566,6 +574,24 @@ const INITIAL_PROJECT_FOLDERS: ProjectFolder[] = [
   }
 ];
 
+const cloneProjectFile = (file: ProjectFile): ProjectFile => ({ ...file });
+
+const cloneProjectFolder = (folder: ProjectFolder): ProjectFolder => ({
+  ...folder,
+  files: folder.files.map(cloneProjectFile)
+});
+
+const createDefaultFolders = (): ProjectFolder[] => INITIAL_PROJECT_FOLDERS.map(cloneProjectFolder);
+
+const createDefaultWorkspace = (): Required<WorkspaceSnapshot> => {
+  const folders = createDefaultFolders();
+  return {
+    folders,
+    trashedProjects: [],
+    activeFolderId: folders[0]?.id ?? null
+  };
+};
+
 const createId = (prefix: string) => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return `${prefix}-${crypto.randomUUID()}`;
@@ -583,18 +609,92 @@ const App = () => {
   });
   const transitionTimeoutRef = useRef<number | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [folders, setFolders] = useState<ProjectFolder[]>(() =>
-    INITIAL_PROJECT_FOLDERS.map((folder) => ({
-      ...folder,
-      files: [...folder.files]
-    }))
-  );
+  const [folders, setFolders] = useState<ProjectFolder[]>(createDefaultFolders);
   const [trashedProjects, setTrashedProjects] = useState<TrashedProject[]>([]);
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(() =>
-    INITIAL_PROJECT_FOLDERS.length > 0 ? INITIAL_PROJECT_FOLDERS[0].id : null
-  );
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(() => createDefaultWorkspace().activeFolderId);
   const [activeProject, setActiveProject] = useState<ActiveProjectContext | null>(null);
   const [isGuestSession, setIsGuestSession] = useState(false);
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
+  const workspaceOwner = useMemo(() => {
+    if (user) {
+      return user.uid;
+    }
+    if (isGuestSession) {
+      return 'guest';
+    }
+    return null;
+  }, [isGuestSession, user]);
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!workspaceOwner) {
+      const defaults = createDefaultWorkspace();
+      setFolders(defaults.folders);
+      setTrashedProjects(defaults.trashedProjects);
+      setActiveFolderId(defaults.activeFolderId);
+      setWorkspaceLoaded(false);
+      return;
+    }
+
+    const storageKey = `${WORKSPACE_STORAGE_PREFIX}.${workspaceOwner}`;
+    setWorkspaceLoaded(false);
+
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) {
+        const snapshot = JSON.parse(raw) as WorkspaceSnapshot;
+        const restoredFolders = Array.isArray(snapshot.folders)
+          ? snapshot.folders.map(cloneProjectFolder)
+          : createDefaultFolders();
+        const restoredTrash = Array.isArray(snapshot.trashedProjects)
+          ? snapshot.trashedProjects.map((item) => ({ ...item }))
+          : [];
+        const fallbackActive = restoredFolders[0]?.id ?? null;
+        const restoredActive =
+          snapshot.activeFolderId && restoredFolders.some((folder) => folder.id === snapshot.activeFolderId)
+            ? snapshot.activeFolderId
+            : fallbackActive;
+        setFolders(restoredFolders);
+        setTrashedProjects(restoredTrash);
+        setActiveFolderId(restoredActive);
+      } else {
+        const defaults = createDefaultWorkspace();
+        setFolders(defaults.folders);
+        setTrashedProjects(defaults.trashedProjects);
+        setActiveFolderId(defaults.activeFolderId);
+      }
+    } catch (error) {
+      console.error('Failed to restore workspace', error);
+      const defaults = createDefaultWorkspace();
+      setFolders(defaults.folders);
+      setTrashedProjects(defaults.trashedProjects);
+      setActiveFolderId(defaults.activeFolderId);
+    } finally {
+      setWorkspaceLoaded(true);
+    }
+  }, [workspaceOwner]);
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (!workspaceOwner || !workspaceLoaded) {
+      return;
+    }
+    const storageKey = `${WORKSPACE_STORAGE_PREFIX}.${workspaceOwner}`;
+    const snapshot: Required<WorkspaceSnapshot> = {
+      folders,
+      trashedProjects,
+      activeFolderId
+    };
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(snapshot));
+    } catch (error) {
+      console.error('Failed to persist workspace', error);
+    }
+  }, [workspaceOwner, workspaceLoaded, folders, trashedProjects, activeFolderId]);
+
 
   const updateLocationForView = useCallback((next: AppView) => {
     if (typeof window === 'undefined') {
