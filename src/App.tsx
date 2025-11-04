@@ -33,8 +33,8 @@ type ProjectionStudioAppProps = {
 
 const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStudioAppProps) => {
   const { user, signOut } = useAuth();
-  const [brightness, setBrightness] = useState(INITIAL_BRIGHTNESS);
-  const [contrast, setContrast] = useState(INITIAL_CONTRAST);
+  const [brightness, setBrightnessState] = useState(INITIAL_BRIGHTNESS);
+  const [contrast, setContrastState] = useState(INITIAL_CONTRAST);
   const [statusMessage, setStatusMessage] = useState<string | null>(INITIAL_STATUS_MESSAGE);
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -59,7 +59,30 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
   const initialViewportAspectRef = useRef<number | null>(null);
   const [lockedViewportAspect, setLockedViewportAspect] = useState<number | null>(null);
   const [projectorEnabled, setProjectorEnabled] = useState(false);
-    const {
+  const applyAdjustmentsToRenderer = useCallback(
+    (nextBrightness: number, nextContrast: number) => {
+      latestAdjustmentsRef.current = { brightness: nextBrightness, contrast: nextContrast };
+      updateAdjustments({ brightness: nextBrightness, contrast: nextContrast });
+    },
+    [updateAdjustments]
+  );
+  const handleBrightnessChange = useCallback(
+    (value: number) => {
+      setBrightnessState(value);
+      const currentContrast = latestAdjustmentsRef.current.contrast;
+      applyAdjustmentsToRenderer(value, currentContrast);
+    },
+    [applyAdjustmentsToRenderer]
+  );
+  const handleContrastChange = useCallback(
+    (value: number) => {
+      setContrastState(value);
+      const currentBrightness = latestAdjustmentsRef.current.brightness;
+      applyAdjustmentsToRenderer(currentBrightness, value);
+    },
+    [applyAdjustmentsToRenderer]
+  );
+  const {
     analysis,
     analysisError,
     isAnalyzing,
@@ -72,8 +95,8 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
     asset,
     brightness,
     contrast,
-    setBrightness,
-    setContrast,
+    setBrightness: handleBrightnessChange,
+    setContrast: handleContrastChange,
     setStatusMessage
   });
 
@@ -116,9 +139,9 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
   }, [resetAspectRatio]);
 
   const resetAdjustments = useCallback(() => {
-    setBrightness(INITIAL_BRIGHTNESS);
-    setContrast(INITIAL_CONTRAST);
-  }, []);
+    handleBrightnessChange(INITIAL_BRIGHTNESS);
+    handleContrastChange(INITIAL_CONTRAST);
+  }, [handleBrightnessChange, handleContrastChange]);
 
   const handleOpenFileDialog = useCallback(() => {
     if (isLoading || isExporting) {
@@ -153,7 +176,7 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
       const totalPages = asset.pageCount || 1;
     const activeIndex = currentFrame - 1;
     const baseName = activeFileName ? activeFileName.replace(/\.[^/.]+$/, '') : 'ViewSure_Preview';
-    const adjustments = { brightness, contrast };
+    const adjustments = { ...latestAdjustmentsRef.current };
     const pageImages: Array<{ dataUrl: string; width: number; height: number }> = [];
 
     try {
@@ -226,19 +249,7 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
       }
       setIsExporting(false);
     }
-  }, [
-    activeFileName,
-    asset,
-    brightness,
-    captureFrame,
-    contrast,
-    currentFrame,
-    isExporting,
-    isLoading,
-    isReady,
-    loadImage,
-    updateAdjustments
-  ]);
+  }, [activeFileName, asset, captureFrame, currentFrame, isExporting, isLoading, isReady, loadImage, updateAdjustments]);
 
   // WCAG プレビュー用のテキストオーバーレイとアスペクト
   const textOverlay = useMemo(
@@ -298,6 +309,39 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
       handlePageChange(currentFrame + 1);
     }
   }, [canGoNext, currentFrame, handlePageChange]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT')
+      ) {
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        goToPrevious();
+        return;
+      }
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        goToNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [goToNext, goToPrevious]);
 
   useEffect(() => {
     setPageInputValue(String(currentFrame));
@@ -421,8 +465,8 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
               brightness={brightness}
               contrast={contrast}
               disabled={!isReady || isLoading || isExporting || isApplying}
-              onBrightnessChange={setBrightness}
-              onContrastChange={setContrast}
+              onBrightnessChange={handleBrightnessChange}
+              onContrastChange={handleContrastChange}
               onReset={resetAdjustments}
               pageCount={pageCount || undefined}
               currentPage={asset ? currentFrame : undefined}

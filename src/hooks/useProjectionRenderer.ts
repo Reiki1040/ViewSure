@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadToneMappingModule, type ToneMappingExports } from '../utils/toneMappingWasm';
-import { useStableRef } from './useStableRef';
 import { calculateScale, createProgram, resizeCanvasToDisplaySize } from '../utils/webgl';
 
 type WebGLResources = {
@@ -142,7 +141,7 @@ export const useProjectionRenderer = () => {
   const [isReady, setIsReady] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
   const toneMappingRef = useRef<ToneMappingExports | null>(null);
-  const adjustmentsRef = useStableRef<AdjustmentPayload>({ brightness: 1, contrast: 1 });
+  const adjustmentsRef = useRef<AdjustmentPayload>({ brightness: 1, contrast: 1 });
   const lastInputRef = useRef<{ brightness: number; contrast: number }>({ brightness: 100, contrast: 0 });
   const rafHandleRef = useRef<number | null>(null);
 
@@ -248,9 +247,31 @@ export const useProjectionRenderer = () => {
           | HTMLVideoElement
           | ImageBitmap);
       }
-      gl.generateMipmap(gl.TEXTURE_2D);
 
       const imageSize = getSourceDimensions(source);
+      const isPowerOfTwo = (value: number) => {
+        if (!Number.isFinite(value) || value <= 0) {
+          return false;
+        }
+        const rounded = Math.round(value);
+        if (Math.abs(rounded - value) > 0.0001) {
+          return false;
+        }
+        return (rounded & (rounded - 1)) === 0;
+      };
+      const canUseMipmaps =
+        imageSize.width > 0 &&
+        imageSize.height > 0 &&
+        isPowerOfTwo(imageSize.width) &&
+        isPowerOfTwo(imageSize.height);
+
+      if (canUseMipmaps) {
+        gl.generateMipmap(gl.TEXTURE_2D);
+      } else {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
       resources.imageSize = imageSize;
       if (imageSize.width > 0 && imageSize.height > 0) {
         if (firstAspectRatioRef.current === null) {
@@ -537,5 +558,3 @@ export const useProjectionRenderer = () => {
     ]
   );
 };
-
-
