@@ -14,6 +14,7 @@ type ProjectDashboardProps = {
   activeFolderId: string | null;
   onSelectFolder: (folderId: string | null) => void;
   onCreateFolder: (folderName: string) => void;
+  onDeleteFolder: (folderId: string) => void;
   onCreateProject: (folderId: string, projectName: string) => void;
   onOpenProject: (context: ActiveProjectContext) => void;
   onDeleteProject: (folderId: string, projectId: string) => void;
@@ -54,6 +55,10 @@ const CONFIRM_PURGE =
   '\u3054\u307f\u7bb1\u304b\u3089\u5b8c\u5168\u306b\u524a\u9664\u3057\u307e\u3059\u304b\uff1f\u3053\u306e\u64cd\u4f5c\u306f\u5143\u306b\u623b\u305b\u307e\u305b\u3093\u3002';
 const CONFIRM_EMPTY_TRASH =
   '\u3054\u307f\u7bb1\u3092\u7a7a\u306b\u3059\u308b\u3068\u5168\u3066\u306e\u30a2\u30a4\u30c6\u30e0\u304c\u5b8c\u5168\u306b\u524a\u9664\u3055\u308c\u307e\u3059\u3002\u3088\u308d\u3057\u3044\u3067\u3059\u304b\uff1f';
+const CONFIRM_DELETE_FOLDER =
+  '\u300c{folder}\u300d\u30d5\u30a9\u30eb\u30c0\u3092\u524a\u9664\u3057\u307e\u3059\u304b\uff1f';
+const CONFIRM_DELETE_FOLDER_WITH_PROJECTS =
+  '\u300c{folder}\u300d\u30d5\u30a9\u30eb\u30c0\u306b\u306f {count} \u4ef6\u306e\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u304c\u542b\u307e\u308c\u3066\u3044\u307e\u3059\u3002\u524a\u9664\u3059\u308b\u3068\u3059\u3079\u3066\u30b4\u30df\u7bb1\u306b\u79fb\u52d5\u3057\u307e\u3059\u3002\u524a\u9664\u3057\u3066\u3082\u3088\u308d\u3057\u3044\u3067\u3059\u304b\uff1f';
 
 const ProjectDashboard = ({
   folders,
@@ -61,6 +66,7 @@ const ProjectDashboard = ({
   activeFolderId,
   onSelectFolder,
   onCreateFolder,
+  onDeleteFolder,
   onCreateProject,
   onOpenProject,
   onDeleteProject,
@@ -126,6 +132,22 @@ const ProjectDashboard = ({
       return;
     }
     onCreateProject(activeFolder.id, name.trim());
+  };
+
+  const handleDeleteFolder = (
+    event: MouseEvent<HTMLButtonElement>,
+    folder: ProjectFolder
+  ) => {
+    event.stopPropagation();
+    const count = folder.files.length;
+    const message =
+      count > 0
+        ? CONFIRM_DELETE_FOLDER_WITH_PROJECTS.replace('{folder}', folder.name).replace('{count}', String(count))
+        : CONFIRM_DELETE_FOLDER.replace('{folder}', folder.name);
+    if (!window.confirm(message)) {
+      return;
+    }
+    onDeleteFolder(folder.id);
   };
 
   const handleProjectOpen = (file: ProjectFile, folder: ProjectFolder) => {
@@ -217,7 +239,7 @@ const ProjectDashboard = ({
             </div>
             <ul className="project-dashboard__folder-list">
               {folders.map((folder) => (
-                <li key={folder.id}>
+                <li key={folder.id} className="project-dashboard__folder-item">
                   <button
                     type="button"
                     className={`project-dashboard__folder-button${
@@ -226,6 +248,21 @@ const ProjectDashboard = ({
                     onClick={() => onSelectFolder(folder.id)}
                   >
                     {folder.name}
+                  </button>
+                  <button
+                    type="button"
+                    className="project-dashboard__folder-delete"
+                    onClick={(event) => handleDeleteFolder(event, folder)}
+                    aria-label={`「${folder.name}」フォルダを削除`}
+                  >
+                    <span className="project-dashboard__folder-delete-icon" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" focusable="false">
+                        <path
+                          d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </span>
                   </button>
                 </li>
               ))}

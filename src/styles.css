@@ -1556,6 +1556,12 @@ a {
   gap: 6px;
 }
 
+.project-dashboard__folder-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .project-dashboard__folder-button {
   width: 100%;
   text-align: left;
@@ -1577,6 +1583,40 @@ a {
   background: rgba(88, 111, 224, 0.35);
   color: #ffffff;
   font-weight: 600;
+}
+
+.project-dashboard__folder-delete {
+  border: none;
+  background: transparent;
+  color: #f95278;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.project-dashboard__folder-delete:hover,
+.project-dashboard__folder-delete:focus-visible {
+  background: rgba(249, 82, 120, 0.18);
+  color: #ff6d90;
+  outline: none;
+}
+
+.project-dashboard__folder-delete:active {
+  transform: translateY(1px);
+}
+
+.project-dashboard__folder-delete-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+.project-dashboard__folder-delete-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .project-dashboard__sidebar-footer {

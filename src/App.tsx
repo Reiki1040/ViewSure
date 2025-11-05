@@ -851,6 +851,56 @@ const App = () => {
     setActiveFolderId(newFolder.id);
   }, []);
 
+  const handleDeleteFolder = useCallback((folderId: string) => {
+    type TrashCandidate = { project: ProjectFile; folder: ProjectFolder };
+    let projectsToTrash: TrashCandidate[] = [];
+
+    setFolders((previous) => {
+      const targetFolder = previous.find((folder) => folder.id === folderId);
+      if (!targetFolder) {
+        return previous;
+      }
+      if (targetFolder.files.length > 0) {
+        projectsToTrash = targetFolder.files.map((project) => ({
+          project,
+          folder: targetFolder
+        }));
+      }
+      return previous.filter((folder) => folder.id !== folderId);
+    });
+
+    if (projectsToTrash.length > 0) {
+      const deletionTimestamp = new Date().toISOString();
+      setTrashedProjects((previousTrash) => [
+        ...projectsToTrash.map(({ project, folder }) => ({
+          id: project.id,
+          name: project.name,
+          category: project.category,
+          notes: project.notes,
+          updatedAt: project.updatedAt,
+          deletedAt: deletionTimestamp,
+          sourceFolderId: folder.id,
+          sourceFolderName: folder.name
+        })),
+        ...previousTrash
+      ]);
+    }
+
+    setActiveProject((current) => {
+      if (current && current.folderId === folderId) {
+        return null;
+      }
+      return current;
+    });
+
+    setActiveFolderId((current) => {
+      if (current === folderId) {
+        return null;
+      }
+      return current;
+    });
+  }, []);
+
   const handleCreateProject = useCallback((folderId: string, projectName: string) => {
     const trimmed = projectName.trim();
     if (!trimmed) {
@@ -933,6 +983,7 @@ const App = () => {
           activeFolderId={activeFolderId}
           onSelectFolder={handleSelectFolder}
           onCreateFolder={handleCreateFolder}
+          onDeleteFolder={handleDeleteFolder}
           onCreateProject={handleCreateProject}
           onOpenProject={handleOpenProject}
           onDeleteProject={handleDeleteProject}
