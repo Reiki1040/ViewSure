@@ -88,7 +88,15 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       getFrame: async (index: number) => renderer.getPageCanvas(index),
       dispose: () => renderer.dispose(),
       hasFrame: (index: number) => renderer.hasFrame(index),
-      getTextContent: async (index: number) => renderer.getPageTextContent(index)
+      getTextContent: async (index: number) => renderer.getPageTextContent(index),
+      getStructure: async () => {
+        if (isPdf) {
+          const { buildSlideStructure } = await import('./pdfStructureAnalyzer');
+          const textContent = await renderer.getPageTextContent(0);
+          return [buildSlideStructure(textContent, 0)];
+        }
+        return null;
+      }
     };
   }
 
@@ -104,7 +112,16 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       pageCount: 1,
       getFrame: async () => canvas,
       hasFrame: () => true,
-      getTextContent: async () => null
+      getTextContent: async () => null,
+      getStructure: async () => {
+        if (isPptx) {
+          const { extractPptxStructure } = await import('./pptxStructureAnalyzer');
+          // PPTXの場合はArrayBufferが必要だが、ここでは簡易実装
+          console.warn('PPTX構造解析は完全な実装が必要です');
+          return null;
+        }
+        return null;
+      }
     };
   }
 
@@ -115,7 +132,8 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       pageCount: 1,
       getFrame: async () => source,
       hasFrame: () => true,
-      getTextContent: async () => null
+      getTextContent: async () => null,
+      getStructure: async () => null
     };
   }
 
@@ -129,7 +147,8 @@ export const loadProjectionAsset = async (file: File): Promise<ProjectionAsset> 
       pageCount: 1,
       getFrame: async () => source,
       hasFrame: () => true,
-      getTextContent: async () => null
+      getTextContent: async () => null,
+      getStructure: async () => null
     };
   }
 
