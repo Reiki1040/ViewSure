@@ -8,6 +8,40 @@ import type {
 } from '../types/projects';
 import { TRASH_FOLDER_ID } from '../types/projects';
 
+const CATEGORY_LABELS: Record<ProjectFile['category'], string> = {
+  Presentation: 'Presentation',
+  Import: 'Import',
+  Draft: 'Draft'
+};
+
+const CATEGORY_ACCENTS: Record<ProjectFile['category'], string> = {
+  Presentation: '#4f7dff',
+  Import: '#64d2ff',
+  Draft: '#f6b15a'
+};
+
+type RecentProject = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  folderId: string;
+  folderName: string;
+  category: ProjectFile['category'];
+};
+
+const formatDateTime = (iso: string) => {
+  const value = new Date(iso);
+  if (Number.isNaN(value.getTime())) {
+    return '-';
+  }
+  return value.toLocaleString();
+};
+
+const getTimestampValue = (value: string) => {
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
 type ProjectDashboardProps = {
   folders: ProjectFolder[];
   trashedProjects: TrashedProject[];
@@ -22,18 +56,10 @@ type ProjectDashboardProps = {
   onEmptyTrash: () => void;
 };
 
-const formatDateTime = (iso: string) => {
-  const value = new Date(iso);
-  if (Number.isNaN(value.getTime())) {
-    return '-';
-  }
-  return value.toLocaleString();
-};
-
-const RECENT_LABEL = '\u6700\u8fd1\u4f7f\u7528\u3057\u305f\u30d7\u30ed\u30b8\u30a7\u30af\u30c8';
 const TRASH_LABEL = '\u30b4\u30df\u7bb1';
-const DEFAULT_SUBTITLE =
-  '\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u4e00\u89a7\u3092\u6574\u7406\u3057\u3066\u3001\u7ba1\u7406\u3057\u305f\u3044\u30d5\u30a9\u30eb\u30c0\u3092\u30c0\u30d6\u30eb\u30af\u30ea\u30c3\u30af\u3067\u958b\u3044\u3066\u304f\u3060\u3055\u3044\u3002';
+const DASHBOARD_LABEL = 'Dashboard Overview';
+const DASHBOARD_SUBTITLE = '\u30ef\u30fc\u30af\u30b9\u30da\u30fc\u30b9\u5168\u4f53\u3092\u30af\u30a4\u30c3\u30af\u306b\u30b5\u30de\u30ea\u30fc\u3002';
+const DEFAULT_SUBTITLE = '';
 const TRASH_SUBTITLE =
   '\u524a\u9664\u3057\u305f\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u306f\u3053\u3053\u306b\u79fb\u52d5\u3057\u307e\u3059\u3002\u30b4\u30df\u7bb1\u3092\u7a7a\u306b\u3059\u308b\u3068\u5b8c\u5168\u306b\u524a\u9664\u3055\u308c\u307e\u3059\u3002';
 const SEARCH_PROJECTS = '\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u3092\u691c\u7d22';
@@ -110,9 +136,59 @@ const ProjectDashboard = ({
   }, [activeFolder, isTrashView, searchTerm, trashedProjects]);
 
   const projectCount = filteredProjects.length;
-  const headerTitle = isTrashView ? TRASH_LABEL : activeFolder ? activeFolder.name : RECENT_LABEL;
-  const headerSubtitle = isTrashView ? TRASH_SUBTITLE : DEFAULT_SUBTITLE;
+  const isDashboardView = !isTrashView && !activeFolder;
+  const headerTitle = isTrashView ? TRASH_LABEL : activeFolder ? activeFolder.name : DASHBOARD_LABEL;
+  const headerSubtitle = isTrashView ? TRASH_SUBTITLE : activeFolder ? DEFAULT_SUBTITLE : DASHBOARD_SUBTITLE;
   const searchPlaceholder = isTrashView ? SEARCH_TRASH : SEARCH_PROJECTS;
+
+  const totalProjects = useMemo(() => folders.reduce((sum, folder) => sum + folder.files.length, 0), [folders]);
+  const totalFolders = folders.length;
+
+  const categoryBreakdown = useMemo<Record<ProjectFile['category'], number>>(() => {
+    return folders.reduce(
+      (acc, folder) => {
+        folder.files.forEach((file) => {
+          acc[file.category] = (acc[file.category] ?? 0) + 1;
+        });
+        return acc;
+      },
+      { Presentation: 0, Import: 0, Draft: 0 } as Record<ProjectFile['category'], number>
+    );
+  }, [folders]);
+
+  const recentProjects = useMemo<RecentProject[]>(() => {
+    const allProjects: RecentProject[] = [];
+    folders.forEach((folder) => {
+      folder.files.forEach((file) => {
+        allProjects.push({
+          id: file.id,
+          name: file.name,
+          updatedAt: file.updatedAt,
+          folderId: folder.id,
+          folderName: folder.name,
+          category: file.category
+        });
+      });
+    });
+    return allProjects.sort((a, b) => getTimestampValue(b.updatedAt) - getTimestampValue(a.updatedAt)).slice(0, 5);
+  }, [folders]);
+
+  const sortedTrash = useMemo(
+    () => [...trashedProjects].sort((a, b) => getTimestampValue(b.deletedAt) - getTimestampValue(a.deletedAt)),
+    [trashedProjects]
+  );
+
+  const heroTitle = isTrashView ? 'Trash Center' : activeFolder ? activeFolder.name : DASHBOARD_LABEL;
+  const heroDescription = isTrashView ? TRASH_SUBTITLE : headerSubtitle;
+  const heroPrimaryValue = isTrashView
+    ? trashedProjects.length
+    : activeFolder
+      ? activeFolder.files.length
+      : totalProjects;
+  const heroPrimaryLabel = isTrashView ? '保管中のアイテム' : activeFolder ? 'フォルダ内のプロジェクト' : '全プロジェクト';
+  const heroSecondaryTimestamp = isTrashView ? sortedTrash[0]?.deletedAt : recentProjects[0]?.updatedAt;
+  const heroSecondaryValue = heroSecondaryTimestamp ? formatDateTime(heroSecondaryTimestamp) : '履歴なし';
+  const heroSecondaryLabel = isTrashView ? '最終削除日時' : '最終更新日時';
 
   const handleCreateFolder = () => {
     const name = window.prompt(PROMPT_NEW_FOLDER);
@@ -202,6 +278,12 @@ const ProjectDashboard = ({
     setSelectedProjectId(null);
   };
 
+  const categoryEntries = Object.entries(categoryBreakdown) as Array<[
+    ProjectFile['category'],
+    number
+  ]>;
+  const categoryTotal = categoryEntries.reduce((sum, [, count]) => sum + count, 0);
+
   return (
     <div className="project-dashboard">
       <aside className="project-dashboard__sidebar" aria-label="プロジェクトメニュー">
@@ -210,44 +292,65 @@ const ProjectDashboard = ({
             <span className="project-dashboard__branding-logo" aria-hidden="true">
               VS
             </span>
-            <span className="project-dashboard__branding-name">ViewSure</span>
+            <div>
+              <strong>ViewSure</strong>
+              <p>Projection Studio</p>
+            </div>
           </div>
           <button type="button" className="project-dashboard__signout" onClick={() => signOut()}>
             サインアウト
           </button>
         </div>
-        <nav className="project-dashboard__nav">
-          <h2 className="project-dashboard__nav-heading">FOLDERS</h2>
-          <button
-            type="button"
-            className={`project-dashboard__nav-item${activeFolderId === null ? ' project-dashboard__nav-item--active' : ''}`}
-            onClick={() => onSelectFolder(null)}
-          >
-            {RECENT_LABEL}
-          </button>
-          <div className="project-dashboard__nav-group">
-            <div className="project-dashboard__nav-group-header">
-              <span className="project-dashboard__nav-group-icon" aria-hidden="true">
-                <svg viewBox="0 0 20 20" focusable="false">
+        <p className="project-dashboard__sidebar-description">
+          投影前の資料を整理し、フォルダ単位で管理できます。フォルダを選ぶと詳細が右側に表示されます。
+        </p>
+        <nav className="project-dashboard__menu" aria-label="メインメニュー">
+          <div className="project-dashboard__menu-group">
+            <p className="project-dashboard__menu-label">Main Menu</p>
+            <button
+              type="button"
+              className={`project-dashboard__menu-item${isDashboardView ? ' project-dashboard__menu-item--active' : ''}`}
+              onClick={() => onSelectFolder(null)}
+            >
+              <span className="project-dashboard__menu-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
                   <path
-                    d="M3 5a2 2 0 0 1 2-2h2.5l1-1h3l1 1H14a2 2 0 0 1 2 2v1H3V5Zm0 3h13v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z"
+                    d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-5H10v5H5a1 1 0 0 1-1-1v-9.5Z"
                     fill="currentColor"
                   />
                 </svg>
               </span>
-              <span>MyProjects</span>
-            </div>
+              ダッシュボード
+            </button>
+            <button
+              type="button"
+              className={`project-dashboard__menu-item${isTrashView ? ' project-dashboard__menu-item--active' : ''}`}
+              onClick={() => onSelectFolder(TRASH_FOLDER_ID)}
+            >
+              <span className="project-dashboard__menu-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path
+                    d="M9 3h6l1 2h5v2h-1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7H3V5h5l1-2Zm8 4H7v11h10V7Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+              {TRASH_LABEL}
+              {trashedProjects.length > 0 ? <span className="project-dashboard__badge">{trashedProjects.length}</span> : null}
+            </button>
+          </div>
+          <div className="project-dashboard__menu-group">
+            <p className="project-dashboard__menu-label">Folder</p>
             <ul className="project-dashboard__folder-list">
               {folders.map((folder) => (
-                <li key={folder.id} className="project-dashboard__folder-item">
+                <li key={folder.id} className={`project-dashboard__folder-item${folder.id === activeFolderId ? ' is-active' : ''}`}>
                   <button
                     type="button"
-                    className={`project-dashboard__folder-button${
-                      folder.id === activeFolderId ? ' project-dashboard__folder-button--active' : ''
-                    }`}
+                    className="project-dashboard__folder-button"
                     onClick={() => onSelectFolder(folder.id)}
                   >
-                    {folder.name}
+                    <span className="project-dashboard__folder-name">{folder.name}</span>
+                    <span className="project-dashboard__folder-meta">{folder.files.length}</span>
                   </button>
                   <button
                     type="button"
@@ -255,67 +358,49 @@ const ProjectDashboard = ({
                     onClick={(event) => handleDeleteFolder(event, folder)}
                     aria-label={`「${folder.name}」フォルダを削除`}
                   >
-                    <span className="project-dashboard__folder-delete-icon" aria-hidden="true">
-                      <svg viewBox="0 0 20 20" focusable="false">
-                        <path
-                          d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
-                          fill="currentColor"
-                        />
-                      </svg>
-                    </span>
+                    <svg viewBox="0 0 20 20" focusable="false">
+                      <path
+                        d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
+                        fill="currentColor"
+                      />
+                    </svg>
                   </button>
                 </li>
               ))}
             </ul>
           </div>
-          <button
-            type="button"
-            className={`project-dashboard__nav-item project-dashboard__nav-item--trash${
-              isTrashView ? ' project-dashboard__nav-item--active' : ''
-            }`}
-            onClick={() => onSelectFolder(TRASH_FOLDER_ID)}
-          >
-            <span className="project-dashboard__nav-group-icon" aria-hidden="true">
+        </nav>
+        <div className="project-dashboard__sidebar-footer">
+          <button type="button" className="project-dashboard__button project-dashboard__button--ghost" onClick={handleCreateFolder}>
+            + {NEW_FOLDER_LABEL}
+          </button>
+        </div>
+      </aside>
+      <div className="project-dashboard__workspace">
+        <header className="project-dashboard__topbar">
+          <div className="project-dashboard__search">
+            <span className="project-dashboard__search-icon" aria-hidden="true">
               <svg viewBox="0 0 20 20" focusable="false">
                 <path
-                  d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
+                  d="M9 3a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm0 2a4 4 0 1 0 2.83 6.83l3.2 3.21 1.42-1.42-3.2-3.2A4 4 0 0 0 9 5Z"
                   fill="currentColor"
                 />
               </svg>
             </span>
-            {TRASH_LABEL}
-            {trashedProjects.length > 0 ? <span className="project-dashboard__badge">{trashedProjects.length}</span> : null}
-          </button>
-          <button type="button" className="project-dashboard__nav-item project-dashboard__nav-item--ghost" onClick={handleCreateFolder}>
-            {NEW_FOLDER_LABEL}
-          </button>
-        </nav>
-        <div className="project-dashboard__sidebar-footer">
-          {user ? (
-            <div className="project-dashboard__user">
-              {user.picture ? (
-                <img className="project-dashboard__user-avatar" src={user.picture} alt={`${user.name} のアバター`} />
-              ) : (
-                <span className="project-dashboard__user-avatar project-dashboard__user-avatar--fallback" aria-hidden="true">
-                  {user.name.slice(0, 1)}
-                </span>
-              )}
-              <div className="project-dashboard__user-info">
-                <span className="project-dashboard__user-name">{user.name}</span>
-                <span className="project-dashboard__user-email">{user.email}</span>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </aside>
-      <main className="project-dashboard__main">
-        <header className="project-dashboard__header">
-          <div>
-            <h1 className="project-dashboard__title">{headerTitle}</h1>
-            <p className="project-dashboard__subtitle">{headerSubtitle}</p>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+            />
           </div>
-          <div className="project-dashboard__header-actions">
-            {isTrashView ? (
+          <div className="project-dashboard__top-actions">
+            {!isTrashView ? (
+              <button type="button" className="project-dashboard__button project-dashboard__button--primary" onClick={handleCreateProject}>
+                + {NEW_PROJECT_LABEL}
+              </button>
+            ) : (
               <button
                 type="button"
                 className="project-dashboard__button project-dashboard__button--danger"
@@ -324,141 +409,279 @@ const ProjectDashboard = ({
               >
                 {EMPTY_TRASH_LABEL}
               </button>
-            ) : (
-              <>
-                <button type="button" className="project-dashboard__button" onClick={handleCreateFolder}>
-                  {NEW_FOLDER_LABEL}
-                </button>
-                <button type="button" className="project-dashboard__button project-dashboard__button--primary" onClick={handleCreateProject}>
-                  {NEW_PROJECT_LABEL}
-                </button>
-              </>
             )}
+            <button type="button" className="project-dashboard__button" onClick={handleCreateFolder}>
+              + {NEW_FOLDER_LABEL}
+            </button>
+            {user ? (
+              <div className="project-dashboard__user-chip">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={`${user.name} のアバター`} />
+                ) : (
+                  <span aria-hidden="true">{user.name.slice(0, 1)}</span>
+                )}
+                <div>
+                  <strong>{user.name}</strong>
+                  <small>{user.email}</small>
+                </div>
+                <button type="button" onClick={() => signOut()} aria-label="サインアウト">
+                  ↗
+                </button>
+              </div>
+            ) : null}
           </div>
         </header>
-        <div className="project-dashboard__toolbar">
-          <div className="project-dashboard__toolbar-search">
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
-            />
-            <span className="project-dashboard__toolbar-search-icon" aria-hidden="true">
-              🔍
-            </span>
-          </div>
-          {isTrashView || activeFolder ? <span className="project-dashboard__count">{`${projectCount} 件`}</span> : null}
-        </div>
-        <section className="project-dashboard__table" aria-live="polite">
-          <table>
-            <thead>
+
+        {isDashboardView && (
+        <section className="project-dashboard__cards" aria-label="ダッシュボードのサマリー">
+          <article className="project-dashboard__card project-dashboard__card--hero">
+            <div>
+              <p className="project-dashboard__card-label">Workspace</p>
+              <h2 className="project-dashboard__card-title">{heroTitle}</h2>
+              <p className="project-dashboard__card-text">{heroDescription}</p>
+            </div>
+            <div className="project-dashboard__card-meta">
+              <div>
+                <span className="project-dashboard__card-value">{heroPrimaryValue}</span>
+                <span className="project-dashboard__card-sub">{heroPrimaryLabel}</span>
+              </div>
+              <div>
+                <span className="project-dashboard__card-value">{heroSecondaryValue}</span>
+                <span className="project-dashboard__card-sub">{heroSecondaryLabel}</span>
+              </div>
+            </div>
+            <div className="project-dashboard__hero-actions">
+              <button type="button" className="project-dashboard__button project-dashboard__button--primary" onClick={handleCreateProject}>
+                + {NEW_PROJECT_LABEL}
+              </button>
               {isTrashView ? (
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Folder</th>
-                  <th scope="col">Deleted</th>
-                  <th scope="col">Notes</th>
-                  <th scope="col" className="project-dashboard__actions-header" aria-label="Actions">
-                    &nbsp;
-                  </th>
-                </tr>
+                <button
+                  type="button"
+                  className="project-dashboard__button project-dashboard__button--danger"
+                  onClick={handleEmptyTrashClick}
+                  disabled={trashedProjects.length === 0}
+                >
+                  {EMPTY_TRASH_LABEL}
+                </button>
               ) : (
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Category</th>
-                  <th scope="col">Last Modified</th>
-                  <th scope="col">Notes</th>
-                  <th scope="col" className="project-dashboard__actions-header" aria-label="Actions">
-                    &nbsp;
-                  </th>
-                </tr>
+                <button type="button" className="project-dashboard__button project-dashboard__button--ghost" onClick={handleCreateFolder}>
+                  + {NEW_FOLDER_LABEL}
+                </button>
               )}
-            </thead>
-            <tbody>
-              {isTrashView ? (
-                projectCount > 0 ? (
-                  (filteredProjects as TrashedProject[]).map((item) => (
-                    <tr
-                      key={item.id}
-                      className={selectedProjectId === item.id ? 'is-selected' : ''}
-                      onClick={() => setSelectedProjectId(item.id)}
-                    >
-                      <td data-title="Name">{item.name}</td>
-                      <td data-title="Folder">{item.sourceFolderName}</td>
-                      <td data-title="Deleted">{formatDateTime(item.deletedAt)}</td>
-                      <td data-title="Notes">{item.notes ?? '-'}</td>
-                      <td data-title="Actions" className="project-dashboard__actions-cell">
-                        <button
-                          type="button"
-                          className="project-dashboard__delete-button project-dashboard__delete-button--danger"
-                          aria-label={`${item.name} を完全に削除`}
-                          onClick={(event) => handlePurgeProject(event, item)}
-                        >
-                          <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
-                            <path
-                              d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="project-dashboard__empty-state">
-                    <td colSpan={5}>{TRASH_EMPTY_MESSAGE}</td>
-                  </tr>
-                )
-              ) : activeFolder ? (
-                projectCount > 0 ? (
-                  (filteredProjects as ProjectFile[]).map((file) => (
-                    <tr
-                      key={file.id}
-                      className={selectedProjectId === file.id ? 'is-selected' : ''}
-                      onClick={() => handleProjectOpen(file, activeFolder)}
-                    >
-                      <td data-title="Name">{file.name}</td>
-                      <td data-title="Category">{file.category}</td>
-                      <td data-title="Last Modified">{formatDateTime(file.updatedAt)}</td>
-                      <td data-title="Notes">{file.notes ?? '-'}</td>
-                      <td data-title="Actions" className="project-dashboard__actions-cell">
-                        <button
-                          type="button"
-                          className="project-dashboard__delete-button"
-                          aria-label={`${file.name} を削除`}
-                          onClick={(event) => handleDeleteProject(event, file, activeFolder)}
-                        >
-                          <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
-                            <path
-                              d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="project-dashboard__empty-state">
-                    <td colSpan={5}>
-                      <p>{EMPTY_FOLDER_MESSAGE}</p>
-                      <button type="button" onClick={handleCreateProject}>
-                        {ADD_PROJECT_LABEL}
-                      </button>
-                    </td>
-                  </tr>
-                )
-              ) : (
-                <tr className="project-dashboard__empty-state">
-                  <td colSpan={5}>{SELECT_FOLDER_MESSAGE}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </div>
+          </article>
+          <article className="project-dashboard__card">
+            <p className="project-dashboard__card-label">スナップショット</p>
+            <h3 className="project-dashboard__card-title">進捗状況</h3>
+            <ul className="project-dashboard__stat-list">
+              <li>
+                <span>フォルダ</span>
+                <strong>{totalFolders}</strong>
+              </li>
+              <li>
+                <span>プロジェクト</span>
+                <strong>{totalProjects}</strong>
+              </li>
+              <li>
+                <span>ドラフト</span>
+                <strong>{categoryBreakdown.Draft}</strong>
+              </li>
+              <li>
+                <span>ゴミ箱</span>
+                <strong>{trashedProjects.length}</strong>
+              </li>
+            </ul>
+          </article>
+          <article className="project-dashboard__card">
+            <p className="project-dashboard__card-label">カテゴリ内訳</p>
+            <h3 className="project-dashboard__card-title">リソースバランス</h3>
+            <div className="project-dashboard__stat-items">
+              {categoryEntries.map(([category, count]) => (
+                <div key={category} className="project-dashboard__stat-item">
+                  <div className="project-dashboard__stat-row">
+                    <span>{CATEGORY_LABELS[category]}</span>
+                    <span>{count}</span>
+                  </div>
+                  <div className="project-dashboard__stat-bar">
+                    <span
+                      style={{
+                        width: `${categoryTotal === 0 ? 0 : Math.round((count / categoryTotal) * 100)}%`,
+                        background: CATEGORY_ACCENTS[category]
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
         </section>
-      </main>
+        )}
+
+        <section className={`project-dashboard__grid${isDashboardView ? '' : ' project-dashboard__grid--single'}`}>
+          <div className="project-dashboard__panel" aria-live="polite">
+            <div className="project-dashboard__panel-header">
+              <div>
+                <h2 className="project-dashboard__panel-title">{headerTitle}</h2>
+                <p className="project-dashboard__panel-subtitle">{headerSubtitle}</p>
+              </div>
+              <span className="project-dashboard__count-chip">{projectCount} 件</span>
+            </div>
+            <div className="project-dashboard__table">
+              <table>
+                <thead>
+                  {isTrashView ? (
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Folder</th>
+                      <th scope="col">Deleted</th>
+                      <th scope="col">Notes</th>
+                      <th scope="col" className="project-dashboard__actions-header" aria-label="Actions">
+                        &nbsp;
+                      </th>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Category</th>
+                      <th scope="col">Last Modified</th>
+                      <th scope="col">Notes</th>
+                      <th scope="col" className="project-dashboard__actions-header" aria-label="Actions">
+                        &nbsp;
+                      </th>
+                    </tr>
+                  )}
+                </thead>
+                <tbody>
+                  {isTrashView ? (
+                    projectCount > 0 ? (
+                      (filteredProjects as TrashedProject[]).map((item) => (
+                        <tr
+                          key={item.id}
+                          className={selectedProjectId === item.id ? 'is-selected' : ''}
+                          onClick={() => setSelectedProjectId(item.id)}
+                        >
+                          <td data-title="Name">{item.name}</td>
+                          <td data-title="Folder">{item.sourceFolderName}</td>
+                          <td data-title="Deleted">{formatDateTime(item.deletedAt)}</td>
+                          <td data-title="Notes">{item.notes ?? '-'}</td>
+                          <td data-title="Actions" className="project-dashboard__actions-cell">
+                            <button
+                              type="button"
+                              className="project-dashboard__delete-button project-dashboard__delete-button--danger"
+                              aria-label={`${item.name} を完全に削除`}
+                              onClick={(event) => handlePurgeProject(event, item)}
+                            >
+                              <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                                <path
+                                  d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr className="project-dashboard__empty-state">
+                        <td colSpan={5}>{TRASH_EMPTY_MESSAGE}</td>
+                      </tr>
+                    )
+                  ) : activeFolder ? (
+                    projectCount > 0 ? (
+                      (filteredProjects as ProjectFile[]).map((file) => (
+                        <tr
+                          key={file.id}
+                          className={selectedProjectId === file.id ? 'is-selected' : ''}
+                          onClick={() => handleProjectOpen(file, activeFolder)}
+                        >
+                          <td data-title="Name">{file.name}</td>
+                          <td data-title="Category">{file.category}</td>
+                          <td data-title="Last Modified">{formatDateTime(file.updatedAt)}</td>
+                          <td data-title="Notes">{file.notes ?? '-'}</td>
+                          <td data-title="Actions" className="project-dashboard__actions-cell">
+                            <button
+                              type="button"
+                              className="project-dashboard__delete-button"
+                              aria-label={`${file.name} を削除`}
+                              onClick={(event) => handleDeleteProject(event, file, activeFolder)}
+                            >
+                              <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                                <path
+                                  d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr className="project-dashboard__empty-state">
+                        <td colSpan={5}>
+                          <p>{EMPTY_FOLDER_MESSAGE}</p>
+                          <button type="button" onClick={handleCreateProject}>
+                            {ADD_PROJECT_LABEL}
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  ) : (
+                    <tr className="project-dashboard__empty-state">
+                      <td colSpan={5}>{SELECT_FOLDER_MESSAGE}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {isDashboardView && (
+          <aside className="project-dashboard__panel project-dashboard__panel--side">
+            <div className="project-dashboard__panel-header">
+              <h3 className="project-dashboard__panel-title">最近の更新</h3>
+              <span className="project-dashboard__chip">最新</span>
+            </div>
+            <ul className="project-dashboard__activity-list">
+              {recentProjects.length === 0 ? (
+                <li className="project-dashboard__activity-empty">まだプロジェクトがありません</li>
+              ) : (
+                recentProjects.map((project) => (
+                  <li key={project.id} className="project-dashboard__activity-item">
+                    <span
+                      className="project-dashboard__activity-avatar"
+                      style={{ background: CATEGORY_ACCENTS[project.category] }}
+                      aria-hidden="true"
+                    >
+                      {project.name.slice(0, 1)}
+                    </span>
+                    <div>
+                      <p className="project-dashboard__activity-name">{project.name}</p>
+                      <p className="project-dashboard__activity-meta">
+                        {project.folderName} ・ {formatDateTime(project.updatedAt)}
+                      </p>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+            <div className="project-dashboard__panel-divider" />
+            <div className="project-dashboard__panel-header">
+              <h3 className="project-dashboard__panel-title">ゴミ箱の状態</h3>
+            </div>
+            <p className="project-dashboard__panel-subtitle">
+              現在 {trashedProjects.length} 件が保管されています。クリーンアップすると元に戻せません。
+            </p>
+            <button
+              type="button"
+              className="project-dashboard__button project-dashboard__button--danger"
+              onClick={handleEmptyTrashClick}
+              disabled={trashedProjects.length === 0}
+            >
+              {EMPTY_TRASH_LABEL}
+            </button>
+          </aside>
+          )}
+        </section>
+      </div>
     </div>
   );
 };

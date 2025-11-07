@@ -66,3 +66,13 @@ export type TextRenderingModel = {
   slides: SlideTextModel[];
 };
 
+export type ProjectionAsset = {
+  type: 'pdf' | 'pptx' | 'image';
+  pageCount: number;
+  getFrame: (index: number) => Promise<TexImageSource>;
+  dispose?: () => void;
+  hasFrame?: (index: number) => boolean;
+  getTextContent?: (index: number) => Promise<any | null>;
+  getStructure?: () => Promise<any[] | null>;
+};
+

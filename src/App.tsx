@@ -7,11 +7,19 @@ import WcagPreviewPanel from './components/WcagPreviewPanel';
 import TopMenuBar from './components/TopMenuBar';
 import LandingScreen from './components/LandingScreen';
 import ProjectDashboard from './components/ProjectDashboard';
+import AdvancedProjectorControls from './components/AdvancedProjectorControls';
+import Wcag22Summary from './components/Wcag22Summary';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
 import { useAuth } from './context/AuthContext';
 import { useWcagHelper } from './hooks/useWcagHelper';
+import { useAdvancedProjector } from './hooks/useAdvancedProjector';
+import { useWcag22Helper } from './hooks/useWcag22Helper';
+import { useTextStructureAnalyzer } from './hooks/useTextStructureAnalyzer';
+import TextStructureSummary from './components/TextStructureSummary';
+import './styles/text-structure-summary.css';
 import type { ActiveProjectContext, ProjectFile, ProjectFolder, TrashedProject } from './types/projects';
+import type { ProjectorPreviewSettings } from './types/projector';
 
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
@@ -38,6 +46,9 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
   const [statusMessage, setStatusMessage] = useState<string | null>(INITIAL_STATUS_MESSAGE);
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const [showWcag22Panel, setShowWcag22Panel] = useState(false);
+  const [showTextStructurePanel, setShowTextStructurePanel] = useState(false);
   const {
     canvasRef,
     isReady,
@@ -59,6 +70,79 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
   const initialViewportAspectRef = useRef<number | null>(null);
   const [lockedViewportAspect, setLockedViewportAspect] = useState<number | null>(null);
   const [projectorEnabled, setProjectorEnabled] = useState(false);
+  
+  // 高度なプロジェクター設定
+  const [projectorSettings, setProjectorSettings] = useState<ProjectorPreviewSettings>({
+    resolution: {
+      maintainAspectRatio: true,
+      scalingAlgorithm: 'bilinear',
+      sharpening: {
+        enabled: false,
+        strength: 0.5,
+        radius: 1.0
+      },
+      noiseReduction: {
+        enabled: false,
+        strength: 0.3
+      }
+    },
+    brightness: {
+      globalBrightness: 0,
+      highlights: {
+        adjustment: 0,
+        threshold: 0.7
+      },
+      shadows: {
+        adjustment: 0,
+        threshold: 0.3
+      },
+      gamma: {
+        red: 2.2,
+        green: 2.2,
+        blue: 2.2
+      },
+      hdrToSdr: {
+        enabled: false,
+        nits: 1000,
+        method: 'reinhard'
+      },
+      autoAdjustment: {
+        enabled: false,
+        targetLuminance: 0.5,
+        adaptationSpeed: 0.5
+      }
+    },
+    color: {
+      colorTemperature: {
+        kelvin: 6500,
+        tint: 0
+      },
+      hsv: {
+        hue: 0,
+        saturation: 0,
+        value: 0
+      },
+      colorProfile: {
+        input: 'sRGB',
+        output: 'sRGB',
+        renderingIntent: 'relative'
+      },
+      colorCorrection: {
+        enabled: false,
+        referencePoints: []
+      },
+      colorBlindness: {
+        simulation: 'none' as any,
+        compensation: false
+      }
+    },
+    environment: {
+      ambientLight: 0.2,
+      screenGain: 1.0,
+      throwDistance: 3.0,
+      screenType: 'matte'
+    }
+  });
   const applyAdjustmentsToRenderer = useCallback(
     (nextBrightness: number, nextContrast: number) => {
       latestAdjustmentsRef.current = { brightness: nextBrightness, contrast: nextContrast };
@@ -88,7 +172,7 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
     isAnalyzing,
     isApplying,
     fontAdjustments,
-    applyAdjustments,
+    applyAdjustments: applyWcagAdjustments,
     clearAdjustments,
     getTextOverlayPayload
   } = useWcagHelper({
@@ -98,6 +182,73 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
     setBrightness: handleBrightnessChange,
     setContrast: handleContrastChange,
     setStatusMessage
+  });
+  
+  // 高度なプロジェクターフック
+  const {
+    settings: advancedProjectorSettings,
+    isProcessing: isProcessingAdvanced,
+    luminanceAnalysis,
+    colorDistribution,
+    processedImage,
+    updateSettings,
+    updateResolutionSettings,
+    updateBrightnessSettings,
+    updateColorSettings,
+    updateEnvironmentSettings,
+    processImage,
+    analyzeLuminance,
+    analyzeColorDistribution,
+    applyPreset,
+    resetSettings
+  } = useAdvancedProjector();
+  
+  // WCAG 2.2ヘルパーフック
+  const {
+    analysis: wcag22Analysis,
+    analysisError: wcag22Error,
+    isAnalyzing: isAnalyzingWcag22,
+    isApplying: isApplyingWcag22,
+    adjustmentSettings,
+    colorBlindnessSimulation,
+    isSimulatingColorBlindness,
+    analysisSummary,
+    analyzeDocument,
+    applyAdjustments: applyWcag22Adjustments,
+    simulateColorBlindness,
+    updateAdjustmentSettings,
+    clearAnalysis
+  } = useWcag22Helper({
+    asset,
+    targetLevel: 'AA',
+    onAnalysisComplete: (analysis) => {
+      console.log('WCAG 2.2 分析完了', analysis);
+    },
+    onAdjustmentComplete: (result) => {
+      console.log('WCAG 2.2 調整完了', result);
+    }
+  });
+
+  // テキスト構造解析フック
+  const {
+    structure,
+    isAnalyzing: isAnalyzingStructure,
+    analysisError: structureError,
+    wcagIssues: structureWcagIssues,
+    structureSummary,
+    wcagSummary,
+    getSlideStructure,
+    getElementById,
+    getHeadings,
+    getOutline
+  } = useTextStructureAnalyzer({
+    asset,
+    onAnalysisComplete: (structure) => {
+      console.log('テキスト構造解析完了', structure);
+    },
+    onAnalysisError: (error) => {
+      console.error('テキスト構造解析エラー', error);
+    }
   });
 
   useEffect(() => {
@@ -438,7 +589,7 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
       <TopMenuBar
         onBackToProjects={onBackToProjects}
         onSignOut={user ? handleSignOut : undefined}
-        user={user ? { name: user.name, avatarUrl: user.picture } : undefined}
+        user={user ? { name: user.name, avatarUrl: (user as any).picture } : undefined}
         activeProject={activeProject ? { folderName: activeProject.folderName, projectName: activeProject.projectName } : undefined}
         onOpenFile={handleOpenFileDialog}
         onReset={resetAdjustments}
@@ -470,7 +621,7 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
               onReset={resetAdjustments}
               pageCount={pageCount || undefined}
               currentPage={asset ? currentFrame : undefined}
-              onRequestWcagCheck={applyAdjustments}
+              onRequestWcagCheck={applyWcagAdjustments}
               wcagDisabled={!analysis || isApplying || isLoading || isExporting}
               onClearWcagAdjustments={clearAdjustments}
               showWcagClearButton={hasWcagAdjustments}
@@ -480,6 +631,37 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
               projectorEnabled={projectorEnabled}
               onToggleProjector={handleToggleProjector}
             />
+            
+            <div className="control-panel__advanced-controls">
+              <button
+                type="button"
+                className="control-panel__toggle-button"
+                onClick={() => setShowAdvancedControls(!showAdvancedControls)}
+                disabled={!isReady || isLoading || isExporting || isApplying}
+              >
+                {showAdvancedControls ? '高度なプロジェクター設定: 非表示' : '高度なプロジェクター設定: 表示'}
+              </button>
+            </div>
+            
+            <div className="control-panel__wcag22-controls">
+              <button
+                type="button"
+                className="control-panel__toggle-button"
+                onClick={() => setShowWcag22Panel(!showWcag22Panel)}
+                disabled={!isReady || isLoading || isExporting || isApplying}
+              >
+                {showWcag22Panel ? 'WCAG 2.2 パネル: 非表示' : 'WCAG 2.2 パネル: 表示'}
+              </button>
+            </div>
+            {showAdvancedControls && (
+              <AdvancedProjectorControls
+                settings={projectorSettings}
+                onSettingsChange={setProjectorSettings}
+                disabled={!isReady || isLoading || isExporting || isApplying}
+                showAdvanced={true}
+                sourceDimensions={asset ? { width: 1920, height: 1080 } : undefined}
+              />
+            )}
             <WcagSummary
               analysis={analysis}
               isAnalyzing={isAnalyzing}
@@ -492,6 +674,47 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
                 setCurrentFrame(page);
               }}
             />
+            {showWcag22Panel && (
+              <Wcag22Summary
+                analysis={wcag22Analysis}
+                adjustmentSettings={adjustmentSettings}
+                isAnalyzing={isAnalyzingWcag22}
+                error={wcag22Error}
+                onApplyAdjustments={applyWcag22Adjustments}
+                onAdjustmentSettingsChange={updateAdjustmentSettings}
+                showDetails={true}
+                targetLevel="AA"
+              />
+            )}
+            
+            <div className="control-panel__text-structure-controls">
+              <button
+                type="button"
+                className="control-panel__toggle-button"
+                onClick={() => setShowTextStructurePanel(!showTextStructurePanel)}
+                disabled={!isReady || isLoading || isExporting || isApplying}
+              >
+                {showTextStructurePanel ? 'テキスト構造解析: 非表示' : 'テキスト構造解析: 表示'}
+              </button>
+            </div>
+            
+            {showTextStructurePanel && (
+              <TextStructureSummary
+                structure={structure}
+                wcagIssues={structureWcagIssues}
+                isAnalyzing={isAnalyzingStructure}
+                error={structureError}
+                onSlideSelect={(slideId) => {
+                  if (asset && slideId > 0 && slideId <= asset.pageCount) {
+                    setCurrentFrame(slideId);
+                    setPageInputValue(String(slideId));
+                  }
+                }}
+                onElementSelect={(slideId, elementId) => {
+                  console.log('要素選択:', slideId, elementId);
+                }}
+              />
+            )}
           </div>
         </aside>
         <main className="viewport-container">
