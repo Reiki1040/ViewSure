@@ -535,3 +535,5 @@ export const AutoCorrectionPanel: React.FC<AutoCorrectionPanelProps> = ({
     </div>
   );
 };
+
+export default AutoCorrectionPanel;

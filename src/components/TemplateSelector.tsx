@@ -321,3 +321,5 @@ const getCategoryDisplayName = (category: TemplateCategory): string => {
       return category;
   }
 };
+
+export default TemplateSelector;
