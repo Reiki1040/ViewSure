@@ -1,4 +1,4 @@
-import { type MouseEvent, useEffect, useMemo, useState } from 'react';
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type {
   ActiveProjectContext,
@@ -99,6 +99,7 @@ const ProjectDashboard = ({
   onPurgeProject,
   onEmptyTrash
 }: ProjectDashboardProps) => {
+  const dashboardRef = useRef<HTMLDivElement | null>(null);
   const { user, signOut } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -206,6 +207,24 @@ const ProjectDashboard = ({
       return { ...previous, [activeFolderId]: true };
     });
   }, [activeFolderId]);
+
+  useEffect(() => {
+    const handleDocumentClick = (event: globalThis.MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      if (target.closest('[data-project-activator="true"]')) {
+        return;
+      }
+      if (dashboardRef.current && dashboardRef.current.contains(target)) {
+        setSelectedProjectId(null);
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
 
   const heroTitle = isTrashView ? 'Trash Center' : activeFolder ? activeFolder.name : DASHBOARD_LABEL;
   const heroDescription = isTrashView ? TRASH_SUBTITLE : headerSubtitle;
@@ -321,7 +340,7 @@ const ProjectDashboard = ({
   const categoryTotal = categoryEntries.reduce((sum, [, count]) => sum + count, 0);
 
   return (
-    <div className="project-dashboard">
+    <div className="project-dashboard" ref={dashboardRef}>
       <aside className="project-dashboard__sidebar" aria-label="プロジェクトメニュー">
         <div className="project-dashboard__sidebar-controls">
           <button type="button" className="project-dashboard__icon-button project-dashboard__icon-button--ghost" aria-label="メニュー">
@@ -338,7 +357,7 @@ const ProjectDashboard = ({
         </div>
         <div className="project-dashboard__sidebar-header project-dashboard__sidebar-header--stacked">
           <div className="project-dashboard__branding project-dashboard__branding--stacked">
-            <span className="project-dashboard__branding-title">Title</span>
+            <span className="project-dashboard__branding-title">ViewSure</span>
             <span className="project-dashboard__branding-subtitle">Project Library</span>
           </div>
           <button type="button" className="project-dashboard__signout" onClick={() => signOut()}>
@@ -459,7 +478,9 @@ const ProjectDashboard = ({
                         }`}
                         style={{ maxHeight: isExpanded ? folder.files.length * 48 : undefined }}
                       >
-                        {folder.files.map((file) => (
+                        {folder.files.map((file) => {
+                          const isSelectedProject = selectedProjectId === file.id;
+                          return (
                           <li key={file.id} className="project-dashboard__project-item">
                             <span className="project-dashboard__project-icon" aria-hidden="true">
                               <svg viewBox="0 0 20 20" focusable="false">
@@ -474,15 +495,31 @@ const ProjectDashboard = ({
                             <div className="project-dashboard__project-details">
                               <button
                                 type="button"
-                                className="project-dashboard__project-button"
-                                onClick={() => handleProjectOpen(file, folder)}
+                                className={`project-dashboard__project-button${isSelectedProject ? ' is-ready' : ''}`}
+                                data-project-activator="true"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  if (isSelectedProject) {
+                                    handleProjectOpen(file, folder);
+                                  } else {
+                                    setSelectedProjectId(file.id);
+                                  }
+                                }}
                               >
-                                <span className="project-dashboard__project-name">{file.name}</span>
-                                <span className="project-dashboard__project-meta">{file.category}</span>
+                                <span className="project-dashboard__project-name">
+                                  {isSelectedProject ? '開く' : file.name}
+                                </span>
+                                {!isSelectedProject ? (
+                                  <span className="project-dashboard__project-meta">{file.category}</span>
+                                ) : null}
                               </button>
+                              {isSelectedProject ? (
+                                <span className="project-dashboard__name-helper">{file.name}</span>
+                              ) : null}
                             </div>
                           </li>
-                        ))}
+                          );
+                        })}
                         <li className="project-dashboard__project-item project-dashboard__project-item--action">
                           <button
                             type="button"
@@ -722,34 +759,57 @@ const ProjectDashboard = ({
                     )
                   ) : activeFolder ? (
                     projectCount > 0 ? (
-                      (filteredProjects as ProjectFile[]).map((file) => (
-                        <tr
-                          key={file.id}
-                          className={selectedProjectId === file.id ? 'is-selected' : ''}
-                          onClick={() => handleProjectOpen(file, activeFolder)}
-                        >
-                          <td data-title="Name">{file.name}</td>
-                          <td data-title="Category">{file.category}</td>
-                          <td data-title="Last Modified">{formatDateTime(file.updatedAt)}</td>
-                          <td data-title="Notes">{file.notes ?? '-'}</td>
-                          <td data-title="Actions" className="project-dashboard__actions-cell">
-                            <button
-                              type="button"
-                              className="project-dashboard__delete-button"
-                              aria-label={`${file.name} を削除`}
-                              onClick={(event) => handleDeleteProject(event, file, activeFolder)}
-                            >
-                              <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
-                                <path
-                                  d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
-                                  fill="currentColor"
-                                />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
+                  (filteredProjects as ProjectFile[]).map((file) => {
+                    const isSelected = selectedProjectId === file.id;
+                    return (
+                      <tr
+                        key={file.id}
+                        className={isSelected ? 'is-selected' : ''}
+                        onClick={() => setSelectedProjectId(file.id)}
+                        data-project-activator="true"
+                      >
+                        <td data-title="Name">
+                          <button
+                            type="button"
+                            className={`project-dashboard__name-button${isSelected ? ' is-ready' : ''}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (isSelected) {
+                                handleProjectOpen(file, activeFolder);
+                              } else {
+                                setSelectedProjectId(file.id);
+                              }
+                            }}
+                            data-project-activator="true"
+                          >
+                            {isSelected ? '開く' : file.name}
+                          </button>
+                          {isSelected ? (
+                            <span className="project-dashboard__name-helper">{file.name}</span>
+                          ) : null}
+                        </td>
+                        <td data-title="Category">{file.category}</td>
+                        <td data-title="Last Modified">{formatDateTime(file.updatedAt)}</td>
+                        <td data-title="Notes">{file.notes ?? '-'}</td>
+                        <td data-title="Actions" className="project-dashboard__actions-cell">
+                          <button
+                            type="button"
+                            className="project-dashboard__delete-button"
+                            aria-label={`${file.name} を削除`}
+                            onClick={(event) => handleDeleteProject(event, file, activeFolder)}
+                          >
+                            <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                              <path
+                                d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
                       <tr className="project-dashboard__empty-state">
                         <td colSpan={5}>
                           <p>{EMPTY_FOLDER_MESSAGE}</p>

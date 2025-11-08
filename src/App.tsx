@@ -19,13 +19,13 @@ import { useAdvancedProjector } from './hooks/useAdvancedProjector';
 import { useWcag22Helper } from './hooks/useWcag22Helper';
 import { useTextStructureAnalyzer } from './hooks/useTextStructureAnalyzer';
 import { useTemplateManager } from './hooks/useTemplateManager';
-import { useAutoCorrection } from './hooks/useAutoCorrection';
 import TextStructureSummary from './components/TextStructureSummary';
 import './styles/text-structure-summary.css';
 import './styles/template-selector.css';
 import './styles/auto-correction-panel.css';
 import type { ActiveProjectContext, ProjectFile, ProjectFolder, TrashedProject } from './types/projects';
 import type { ProjectorPreviewSettings } from './types/projector';
+import type { AccessibleTemplate } from './types/templates';
 
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
@@ -261,26 +261,12 @@ const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
 
   // テンプレート管理フック
   const {
-    templates,
     selectedTemplate,
     loading: templateLoading,
-    error: TemplateError,
+    error: templateError,
     selectTemplate,
-    applyTemplate,
-    generatePreview
+    applyTemplate
   } = useTemplateManager(asset || undefined);
-
-  // 自動修正フック
-  const {
-    issues: autoCorrectionIssues,
-    strategies,
-    selectedStrategies,
-    results,
-    loading: correctionLoading,
-    error: correctionError,
-    applyCorrections,
-    generatePreview: generateCorrectionPreview
-  } = useAutoCorrection(asset || undefined);
 
   useEffect(() => {
     if (!activeProject) {
@@ -324,6 +310,46 @@ const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
     handleBrightnessChange(INITIAL_BRIGHTNESS);
     handleContrastChange(INITIAL_CONTRAST);
   }, [handleBrightnessChange, handleContrastChange]);
+
+  const handleTemplateSelect = useCallback(
+    async (template: AccessibleTemplate) => {
+      setStatusMessage('テンプレートを適用しています...');
+      try {
+        await selectTemplate(template.id);
+        const result = await applyTemplate(template);
+        if (!result) {
+          setStatusMessage('資料を読み込むとテンプレートを適用できます');
+          return;
+        }
+        if (result.success) {
+          setStatusMessage('テンプレートを適用しました');
+        } else {
+          setStatusMessage(result.errors?.[0] ?? 'テンプレートの適用に失敗しました');
+        }
+      } catch (error) {
+        console.error('テンプレート適用に失敗しました', error);
+        setStatusMessage('テンプレートの適用に失敗しました');
+      } finally {
+        setShowTemplateSelector(false);
+      }
+    },
+    [applyTemplate, selectTemplate, setShowTemplateSelector, setStatusMessage]
+  );
+
+  const autoIssueCount = analysis?.issues.length ?? 0;
+
+  const templateStatusLabel = useMemo(() => {
+    if (templateLoading) {
+      return 'テンプレートギャラリーを準備しています...';
+    }
+    if (templateError) {
+      return templateError;
+    }
+    if (selectedTemplate) {
+      return `${selectedTemplate.name} を適用済み`;
+    }
+    return 'まだテンプレートは適用されていません';
+  }, [selectedTemplate, templateError, templateLoading]);
 
   const handleOpenFileDialog = useCallback(() => {
     if (isLoading || isExporting) {
@@ -662,37 +688,153 @@ const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
               projectorEnabled={projectorEnabled}
               onToggleProjector={handleToggleProjector}
             />
-            
-            <div className="control-panel__advanced-controls">
+          </div>
+        </aside>
+        <main className="viewport-container">
+          <header className="experience-panel">
+            <div>
+              <p className="experience-panel__eyebrow">Current Session</p>
+              <h2 className="experience-panel__title">
+                {activeFileName ?? activeProject?.projectName ?? 'ファイルを読み込んでください'}
+              </h2>
+              <p className="experience-panel__status">{statusMessage ?? '準備完了'}</p>
+            </div>
+            <div className="experience-panel__badges" aria-live="polite">
+              <span className="experience-panel__badge">
+                ページ {pageCount ?? 0}
+              </span>
+              <span className="experience-panel__badge experience-panel__badge--accent">
+                WCAG {analysis?.issues.length ?? 0}
+              </span>
+            </div>
+            <div className="experience-panel__actions">
               <button
                 type="button"
-                className="control-panel__toggle-button"
-                onClick={() => setShowAdvancedControls(!showAdvancedControls)}
-                disabled={!isReady || isLoading || isExporting || isApplying}
+                className="experience-panel__action"
+                onClick={() => {
+                  resetAspectRatio();
+                  setLockedViewportAspect(null);
+                }}
+                disabled={!asset || !isReady || isLoading}
               >
-                {showAdvancedControls ? '高度なプロジェクター設定: 非表示' : '高度なプロジェクター設定: 表示'}
+                ビューポートを整列
               </button>
-            </div>
-            
-            <div className="control-panel__wcag22-controls">
               <button
                 type="button"
-                className="control-panel__toggle-button"
-                onClick={() => setShowWcag22Panel(!showWcag22Panel)}
-                disabled={!isReady || isLoading || isExporting || isApplying}
+                className="experience-panel__action experience-panel__action--primary"
+                onClick={handleDownloadCurrentView}
+                disabled={!canDownload || isExporting || isLoading}
               >
-                {showWcag22Panel ? 'WCAG 2.2 パネル: 非表示' : 'WCAG 2.2 パネル: 表示'}
+                PDFを書き出す
               </button>
             </div>
-            {showAdvancedControls && (
-              <AdvancedProjectorControls
-                settings={projectorSettings}
-                onSettingsChange={setProjectorSettings}
-                disabled={!isReady || isLoading || isExporting || isApplying}
-                showAdvanced={true}
-                sourceDimensions={asset ? { width: 1920, height: 1080 } : undefined}
+          </header>
+          <div className="viewport-stage">
+            <ProjectionViewport
+              canvasRef={canvasRef}
+              isLoading={isLoading}
+              isReady={isReady}
+              canGoPrev={canGoPrev}
+              canGoNext={canGoNext}
+              onGoPrev={goToPrevious}
+              onGoNext={goToNext}
+              aspectRatio={effectiveViewportAspect}
+              textOverlay={null}
+            />
+            {pageCount > 1 ? (
+            <div className="page-slider" aria-label="ページ選択">
+              <label className="page-slider__label" htmlFor="page-slider-main">ページ</label>
+              <input
+                id="page-slider-main"
+                type="range"
+                min={1}
+                max={pageCount}
+                step={1}
+                value={currentFrame}
+                onChange={(event) => handlePageChange(Number(event.target.value))}
               />
-            )}
+              <div className="page-slider__value">
+                {currentFrame} / {pageCount}
+              </div>
+              <div className="page-slider__jump">
+                <input
+                  type="number"
+                  min={1}
+                  max={pageCount}
+                  value={pageInputValue}
+                  onChange={(event) => setPageInputValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      handlePageInputCommit();
+                    }
+                  }}
+                  aria-label="ページ番号を入力"
+                />
+                <button type="button" onClick={handlePageInputCommit} className="page-slider__jump-button">
+                  移動
+                </button>
+              </div>
+            </div>
+          ) : null}
+          </div>
+          <WcagPreviewPanel
+            overlay={textOverlay}
+            aspectRatio={effectiveViewportAspect}
+            isBusy={!isReady || isLoading || isApplying || isAnalyzing}
+          />
+        </main>
+        <aside className="insights-panel">
+          <div className="insights-panel__header">
+            <p className="insights-panel__eyebrow">Insights Hub</p>
+            <h2>アクセシビリティ &amp; テンプレート</h2>
+            <p className="insights-panel__meta">解析結果と補助ツールをひとまとめにしました。</p>
+          </div>
+          <div className="insights-panel__toolbar" role="group" aria-label="補助パネルの切り替え">
+            <button
+              type="button"
+              aria-pressed={showAdvancedControls}
+              className={`insights-panel__toggle${showAdvancedControls ? ' insights-panel__toggle--active' : ''}`}
+              onClick={() => setShowAdvancedControls((previous) => !previous)}
+              disabled={!isReady || isLoading || isExporting || isApplying}
+            >
+              プロジェクター拡張
+            </button>
+            <button
+              type="button"
+              aria-pressed={showWcag22Panel}
+              className={`insights-panel__toggle${showWcag22Panel ? ' insights-panel__toggle--active' : ''}`}
+              onClick={() => setShowWcag22Panel((previous) => !previous)}
+              disabled={!isReady || isLoading || isExporting || isApplying}
+            >
+              WCAG 2.2
+            </button>
+            <button
+              type="button"
+              aria-pressed={showTextStructurePanel}
+              className={`insights-panel__toggle${showTextStructurePanel ? ' insights-panel__toggle--active' : ''}`}
+              onClick={() => setShowTextStructurePanel((previous) => !previous)}
+              disabled={!isReady || isLoading || isExporting || isApplying}
+            >
+              テキスト構造
+            </button>
+            <button
+              type="button"
+              className="insights-panel__toggle insights-panel__toggle--ghost"
+              onClick={() => setShowTemplateSelector(true)}
+            >
+              テンプレート
+            </button>
+            <button
+              type="button"
+              className="insights-panel__toggle insights-panel__toggle--ghost"
+              onClick={() => setShowAutoCorrectionPanel(true)}
+              disabled={!asset}
+            >
+              自動修正
+            </button>
+          </div>
+          <div className="insights-panel__stack">
             <WcagSummary
               analysis={analysis}
               isAnalyzing={isAnalyzing}
@@ -717,40 +859,15 @@ const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
                 targetLevel="AA"
               />
             )}
-            
-            <div className="control-panel__text-structure-controls">
-              <button
-                type="button"
-                className="control-panel__toggle-button"
-                onClick={() => setShowTextStructurePanel(!showTextStructurePanel)}
+            {showAdvancedControls && (
+              <AdvancedProjectorControls
+                settings={projectorSettings}
+                onSettingsChange={setProjectorSettings}
                 disabled={!isReady || isLoading || isExporting || isApplying}
-              >
-                {showTextStructurePanel ? 'テキスト構造解析: 非表示' : 'テキスト構造解析: 表示'}
-              </button>
-            </div>
-            
-            <div className="control-panel__template-controls">
-              <button
-                type="button"
-                className="control-panel__toggle-button"
-                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
-                disabled={!isReady || isLoading || isExporting || isApplying}
-              >
-                {showTemplateSelector ? 'テンプレート選択: 非表示' : 'テンプレート選択: 表示'}
-              </button>
-            </div>
-            
-            <div className="control-panel__auto-correction-controls">
-              <button
-                type="button"
-                className="control-panel__toggle-button"
-                onClick={() => setShowAutoCorrectionPanel(!showAutoCorrectionPanel)}
-                disabled={!isReady || isLoading || isExporting || isApplying}
-              >
-                {showAutoCorrectionPanel ? '自動修正: 非表示' : '自動修正: 表示'}
-              </button>
-            </div>
-            
+                showAdvanced={true}
+                sourceDimensions={asset ? { width: 1920, height: 1080 } : undefined}
+              />
+            )}
             {showTextStructurePanel && (
               <TextStructureSummary
                 structure={structure}
@@ -768,62 +885,43 @@ const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
                 }}
               />
             )}
+            <section className="insights-panel__card insights-panel__card--template" aria-live="polite">
+              <div>
+                <p className="insights-panel__card-label">テンプレート</p>
+                <h3 className="insights-panel__card-title">
+                  {selectedTemplate ? selectedTemplate.name : '未適用'}
+                </h3>
+                <p className="insights-panel__card-text">{templateStatusLabel}</p>
+              </div>
+              <button
+                type="button"
+                className="insights-panel__card-action"
+                onClick={() => setShowTemplateSelector(true)}
+              >
+                ギャラリーを開く
+              </button>
+            </section>
+            <section className="insights-panel__card insights-panel__card--auto" aria-live="polite">
+              <div>
+                <p className="insights-panel__card-label">自動修正</p>
+                <h3 className="insights-panel__card-title">
+                  {autoIssueCount > 0 ? `${autoIssueCount} 件の改善余地` : '大きな問題は検出されていません'}
+                </h3>
+                <p className="insights-panel__card-text">
+                  {autoIssueCount > 0 ? 'AI 戦略でまとめて修正できます。' : 'WCAG 解析後に利用できます。'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="insights-panel__card-action"
+                onClick={() => setShowAutoCorrectionPanel(true)}
+                disabled={!asset || autoIssueCount === 0}
+              >
+                修正パネルを開く
+              </button>
+            </section>
           </div>
         </aside>
-        <main className="viewport-container">
-          <ProjectionViewport
-            canvasRef={canvasRef}
-            isLoading={isLoading}
-            isReady={isReady}
-            canGoPrev={canGoPrev}
-            canGoNext={canGoNext}
-            onGoPrev={goToPrevious}
-            onGoNext={goToNext}
-            aspectRatio={effectiveViewportAspect}
-            textOverlay={null}
-          />
-          {pageCount > 1 ? (
-          <div className="page-slider" aria-label="ページ選択">
-            <label className="page-slider__label" htmlFor="page-slider-main">ページ</label>
-            <input
-              id="page-slider-main"
-              type="range"
-              min={1}
-              max={pageCount}
-              step={1}
-              value={currentFrame}
-              onChange={(event) => handlePageChange(Number(event.target.value))}
-            />
-            <div className="page-slider__value">
-              {currentFrame} / {pageCount}
-            </div>
-            <div className="page-slider__jump">
-              <input
-                type="number"
-                min={1}
-                max={pageCount}
-                value={pageInputValue}
-                onChange={(event) => setPageInputValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handlePageInputCommit();
-                  }
-                }}
-                aria-label="ページ番号を入力"
-              />
-              <button type="button" onClick={handlePageInputCommit} className="page-slider__jump-button">
-                移動
-              </button>
-            </div>
-          </div>
-        ) : null}
-          <WcagPreviewPanel
-            overlay={textOverlay}
-            aspectRatio={effectiveViewportAspect}
-            isBusy={!isReady || isLoading || isApplying || isAnalyzing}
-          />
-        </main>
       </div>
       {isExporting || isApplying ? (
         <div className="app-overlay" role="status" aria-live="assertive">
@@ -832,6 +930,19 @@ const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
             {isApplying ? 'WCAG 調整を適用しています...' : 'PDF を保存しています...'}
           </p>
         </div>
+      ) : null}
+      {showTemplateSelector ? (
+        <TemplateSelector onTemplateSelect={handleTemplateSelect} onClose={() => setShowTemplateSelector(false)} />
+      ) : null}
+      {showAutoCorrectionPanel ? (
+        <AutoCorrectionPanel
+          issues={analysis?.issues ?? []}
+          asset={asset}
+          onCorrectionApply={(result) => {
+            setStatusMessage(result.success ? '自動修正を適用しました' : '自動修正で課題が残りました');
+          }}
+          onClose={() => setShowAutoCorrectionPanel(false)}
+        />
       ) : null}
     </div>
   );
