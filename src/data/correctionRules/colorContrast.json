@@ -1,0 +1,140 @@
+{
+  "id": "color-contrast-rules",
+  "name": "カラーコントラスト修正ルール",
+  "description": "テキストと背景のコントラスト比をWCAG基準に適合させるための修正ルール",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "insufficient-contrast-error",
+      "issueType": "contrast",
+      "severity": "error",
+      "condition": {
+        "contrastRatio": { "lt": 3 }
+      },
+      "actions": [
+        {
+          "type": "color",
+          "priority": "high",
+          "parameters": {
+            "strategy": "increase-contrast",
+            "targetRatio": 4.5,
+            "preserveHue": true
+          },
+          "description": "コントラスト比を4.5:1以上に引き上げます"
+        }
+      ]
+    },
+    {
+      "id": "insufficient-contrast-warning",
+      "issueType": "contrast",
+      "severity": "warning",
+      "condition": {
+        "contrastRatio": { "gte": 3, "lt": 4.5 }
+      },
+      "actions": [
+        {
+          "type": "color",
+          "priority": "medium",
+          "parameters": {
+            "strategy": "increase-contrast",
+            "targetRatio": 4.5,
+            "preserveHue": true
+          },
+          "description": "コントラスト比を4.5:1以上に引き上げます"
+        }
+      ]
+    },
+    {
+      "id": "heading-contrast-error",
+      "issueType": "contrast",
+      "severity": "error",
+      "condition": {
+        "elementType": "heading",
+        "contrastRatio": { "lt": 3 }
+      },
+      "actions": [
+        {
+          "type": "color",
+          "priority": "high",
+          "parameters": {
+            "strategy": "increase-contrast",
+            "targetRatio": 3,
+            "preserveHue": true
+          },
+          "description": "見出しのコントラスト比を3:1以上に引き上げます"
+        }
+      ]
+    },
+    {
+      "id": "large-text-contrast",
+      "issueType": "contrast",
+      "severity": "warning",
+      "condition": {
+        "fontSize": { "gte": 18 },
+        "contrastRatio": { "gte": 3, "lt": 4.5 }
+      },
+      "actions": [
+        {
+          "type": "color",
+          "priority": "low",
+          "parameters": {
+            "strategy": "increase-contrast",
+            "targetRatio": 3,
+            "preserveHue": true
+          },
+          "description": "大きなテキストのコントラスト比を3:1以上に引き上げます"
+        }
+      ]
+    }
+  ],
+  "colorPalettes": {
+    "highContrast": [
+      { "foreground": "#000000", "background": "#FFFFFF", "ratio": 21 },
+      { "foreground": "#FFFFFF", "background": "#000000", "ratio": 21 },
+      { "foreground": "#1A1A1A", "background": "#FFFFFF", "ratio": 16.5 },
+      { "foreground": "#FFFFFF", "background": "#1A1A1A", "ratio": 16.5 },
+      { "foreground": "#333333", "background": "#FFFFFF", "ratio": 12.6 },
+      { "foreground": "#FFFFFF", "background": "#333333", "ratio": 12.6 }
+    ],
+    "accessibleBlues": [
+      { "foreground": "#003366", "background": "#FFFFFF", "ratio": 8.8 },
+      { "foreground": "#FFFFFF", "background": "#003366", "ratio": 8.8 },
+      { "foreground": "#0066CC", "background": "#FFFFFF", "ratio": 5.2 },
+      { "foreground": "#FFFFFF", "background": "#0066CC", "ratio": 5.2 },
+      { "foreground": "#1A5276", "background": "#FFFFFF", "ratio": 7.8 },
+      { "foreground": "#FFFFFF", "background": "#1A5276", "ratio": 7.8 }
+    ],
+    "accessibleGreens": [
+      { "foreground": "#006633", "background": "#FFFFFF", "ratio": 7.4 },
+      { "foreground": "#FFFFFF", "background": "#006633", "ratio": 7.4 },
+      { "foreground": "#28A745", "background": "#FFFFFF", "ratio": 3.1 },
+      { "foreground": "#FFFFFF", "background": "#28A745", "ratio": 3.1 }
+    ],
+    "accessibleReds": [
+      { "foreground": "#CC0000", "background": "#FFFFFF", "ratio": 6.3 },
+      { "foreground": "#FFFFFF", "background": "#CC0000", "ratio": 6.3 },
+      { "foreground": "#DC3545", "background": "#FFFFFF", "ratio": 3.9 },
+      { "foreground": "#FFFFFF", "background": "#DC3545", "ratio": 3.9 }
+    ]
+  },
+  "strategies": {
+    "increase-contrast": {
+      "description": "色相を維持しながらコントラストを引き上げる",
+      "steps": [
+        "現在の色相を計算",
+        "目標コントラスト比を達成するまで明度を調整",
+        "必要に応じて彩度を調整",
+        "WCAG基準を満たすことを確認"
+      ]
+    },
+    "replace-palette": {
+      "description": "定義されたカラーパレットから適切な組み合わせを選択",
+      "steps": [
+        "元の色のカテゴリを特定",
+        "同じカテゴリのアクセシブルなパレットを検索",
+        "最も近い色相の組み合わせを選択",
+        "適用"
+      ]
+    }
+  }
+}

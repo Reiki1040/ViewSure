@@ -1,10 +1,19 @@
+import type { AccessibleTemplate, TemplateMetadata } from './templates';
+import type { AutoCorrectionSession, AutoCorrectionSettings } from './autoCorrection';
+
 export type ProjectFile = {
   id: string;
   name: string;
-  category: 'Presentation' | 'Import' | 'Draft';
+  category: 'Presentation' | 'Import' | 'Draft' | 'Template';
   updatedAt: string;
   lastOpenedAt?: string;
   notes?: string;
+  // テンプレート関連
+  templateId?: string;
+  templateMetadata?: TemplateMetadata;
+  // 自動修正関連
+  autoCorrectionSettings?: AutoCorrectionSettings;
+  lastAutoCorrectionSession?: string;
 };
 
 export type ProjectFolder = {

@@ -9,6 +9,8 @@ import LandingScreen from './components/LandingScreen';
 import ProjectDashboard from './components/ProjectDashboard';
 import AdvancedProjectorControls from './components/AdvancedProjectorControls';
 import Wcag22Summary from './components/Wcag22Summary';
+import TemplateSelector from './components/TemplateSelector';
+import AutoCorrectionPanel from './components/AutoCorrectionPanel';
 import { useProjectionRenderer } from './hooks/useProjectionRenderer';
 import { loadProjectionAsset, type ProjectionAsset } from './utils/fileLoader';
 import { useAuth } from './context/AuthContext';
@@ -16,8 +18,12 @@ import { useWcagHelper } from './hooks/useWcagHelper';
 import { useAdvancedProjector } from './hooks/useAdvancedProjector';
 import { useWcag22Helper } from './hooks/useWcag22Helper';
 import { useTextStructureAnalyzer } from './hooks/useTextStructureAnalyzer';
+import { useTemplateManager } from './hooks/useTemplateManager';
+import { useAutoCorrection } from './hooks/useAutoCorrection';
 import TextStructureSummary from './components/TextStructureSummary';
 import './styles/text-structure-summary.css';
+import './styles/template-selector.css';
+import './styles/auto-correction-panel.css';
 import type { ActiveProjectContext, ProjectFile, ProjectFolder, TrashedProject } from './types/projects';
 import type { ProjectorPreviewSettings } from './types/projector';
 
@@ -40,15 +46,17 @@ type ProjectionStudioAppProps = {
 };
 
 const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStudioAppProps) => {
-  const { user, signOut } = useAuth();
-  const [brightness, setBrightnessState] = useState(INITIAL_BRIGHTNESS);
-  const [contrast, setContrastState] = useState(INITIAL_CONTRAST);
-  const [statusMessage, setStatusMessage] = useState<string | null>(INITIAL_STATUS_MESSAGE);
-  const [activeFileName, setActiveFileName] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
-  const [showWcag22Panel, setShowWcag22Panel] = useState(false);
-  const [showTextStructurePanel, setShowTextStructurePanel] = useState(false);
+const { user, signOut } = useAuth();
+const [brightness, setBrightnessState] = useState(INITIAL_BRIGHTNESS);
+const [contrast, setContrastState] = useState(INITIAL_CONTRAST);
+const [statusMessage, setStatusMessage] = useState<string | null>(INITIAL_STATUS_MESSAGE);
+const [activeFileName, setActiveFileName] = useState<string | null>(null);
+const [isLoading, setIsLoading] = useState(false);
+const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+const [showWcag22Panel, setShowWcag22Panel] = useState(false);
+const [showTextStructurePanel, setShowTextStructurePanel] = useState(false);
+const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+const [showAutoCorrectionPanel, setShowAutoCorrectionPanel] = useState(false);
   const {
     canvasRef,
     isReady,
@@ -250,6 +258,29 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
       console.error('テキスト構造解析エラー', error);
     }
   });
+
+  // テンプレート管理フック
+  const {
+    templates,
+    selectedTemplate,
+    loading: templateLoading,
+    error: TemplateError,
+    selectTemplate,
+    applyTemplate,
+    generatePreview
+  } = useTemplateManager(asset || undefined);
+
+  // 自動修正フック
+  const {
+    issues: autoCorrectionIssues,
+    strategies,
+    selectedStrategies,
+    results,
+    loading: correctionLoading,
+    error: correctionError,
+    applyCorrections,
+    generatePreview: generateCorrectionPreview
+  } = useAutoCorrection(asset || undefined);
 
   useEffect(() => {
     if (!activeProject) {
@@ -695,6 +726,28 @@ const ProjectionStudioApp = ({ onBackToProjects, activeProject }: ProjectionStud
                 disabled={!isReady || isLoading || isExporting || isApplying}
               >
                 {showTextStructurePanel ? 'テキスト構造解析: 非表示' : 'テキスト構造解析: 表示'}
+              </button>
+            </div>
+            
+            <div className="control-panel__template-controls">
+              <button
+                type="button"
+                className="control-panel__toggle-button"
+                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                disabled={!isReady || isLoading || isExporting || isApplying}
+              >
+                {showTemplateSelector ? 'テンプレート選択: 非表示' : 'テンプレート選択: 表示'}
+              </button>
+            </div>
+            
+            <div className="control-panel__auto-correction-controls">
+              <button
+                type="button"
+                className="control-panel__toggle-button"
+                onClick={() => setShowAutoCorrectionPanel(!showAutoCorrectionPanel)}
+                disabled={!isReady || isLoading || isExporting || isApplying}
+              >
+                {showAutoCorrectionPanel ? '自動修正: 非表示' : '自動修正: 表示'}
               </button>
             </div>
             
