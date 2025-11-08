@@ -1,0 +1,527 @@
+{
+  "id": "general-presentation",
+  "name": "汎用プレゼンテーションテンプレート",
+  "description": "様々な場面で使用できる、シンプルでアクセシブルなテンプレートです。",
+  "category": "general",
+  "preview": "/templates/general-preview.png",
+  "wcagCompliance": {
+    "level": "AA",
+    "guidelines": ["1.4.3", "1.4.5", "1.4.11", "2.4.1", "2.4.6", "3.1.1", "3.1.2"]
+  },
+  "tags": ["汎用", "シンプル", "アクセシブル", "多目的"],
+  "author": "ViewSure Team",
+  "version": "1.0.0",
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:00:00Z",
+  "slides": [
+    {
+      "id": "title-slide",
+      "name": "タイトルスライド",
+      "layout": {
+        "id": "title-layout",
+        "name": "タイトルレイアウト",
+        "width": 1920,
+        "height": 1080,
+        "backgroundColor": "#FFFFFF",
+        "elements": [
+          {
+            "id": "main-title",
+            "type": "title",
+            "position": {
+              "x": 160,
+              "y": 320,
+              "width": 1600,
+              "height": 200
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 60,
+              "fontWeight": "bold",
+              "color": "#2C3E50",
+              "textAlign": "center",
+              "lineHeight": 1.2
+            },
+            "content": "プレゼンテーションタイトル",
+            "accessibility": {
+              "role": "heading",
+              "ariaLabel": "プレゼンテーションタイトル",
+              "readingOrder": 1
+            },
+            "placeholder": "プレゼンテーションタイトル",
+            "required": true
+          },
+          {
+            "id": "subtitle",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 540,
+              "width": 1600,
+              "height": 80
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 32,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "center",
+              "lineHeight": 1.4
+            },
+            "content": "サブタイトルまたは説明",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "サブタイトル",
+              "readingOrder": 2
+            },
+            "placeholder": "サブタイトルまたは説明"
+          },
+          {
+            "id": "presenter-info",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 700,
+              "width": 1600,
+              "height": 60
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 28,
+              "fontWeight": "normal",
+              "color": "#5D6D7E",
+              "textAlign": "center",
+              "lineHeight": 1.4
+            },
+            "content": "発表者名 • 所属",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "発表者情報",
+              "readingOrder": 3
+            },
+            "placeholder": "発表者名 • 所属"
+          },
+          {
+            "id": "date-info",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 800,
+              "width": 1600,
+              "height": 40
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 24,
+              "fontWeight": "normal",
+              "color": "#7F8C8D",
+              "textAlign": "center",
+              "lineHeight": 1.4
+            },
+            "content": "2024年1月1日",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "日付",
+              "readingOrder": 4
+            },
+            "placeholder": "2024年1月1日"
+          }
+        ]
+      },
+      "notes": "シンプルなタイトルスライドです。明確で読みやすいタイトルを使用してください。",
+      "wcagNotes": "タイトルテキストは最低28pt以上、コントラスト比は4.5:1以上を確保しています。"
+    },
+    {
+      "id": "content-slide",
+      "name": "コンテンツスライド",
+      "layout": {
+        "id": "content-layout",
+        "name": "コンテンツレイアウト",
+        "width": 1920,
+        "height": 1080,
+        "backgroundColor": "#FFFFFF",
+        "elements": [
+          {
+            "id": "slide-title",
+            "type": "heading",
+            "position": {
+              "x": 160,
+              "y": 80,
+              "width": 1600,
+              "height": 100
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 44,
+              "fontWeight": "bold",
+              "color": "#2C3E50",
+              "textAlign": "left",
+              "lineHeight": 1.2
+            },
+            "content": "スライドタイトル",
+            "accessibility": {
+              "role": "heading",
+              "ariaLabel": "スライドタイトル",
+              "readingOrder": 1
+            },
+            "placeholder": "スライドタイトル",
+            "required": true
+          },
+          {
+            "id": "main-content",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 200,
+              "width": 1000,
+              "height": 600
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 28,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "left",
+              "lineHeight": 1.5
+            },
+            "content": "主要なコンテンツをここに入力します。明確で簡潔な表現を心がけてください。",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "主要コンテンツ",
+              "readingOrder": 2
+            },
+            "placeholder": "主要なコンテンツをここに入力します。明確で簡潔な表現を心がけてください。"
+          },
+          {
+            "id": "visual-element",
+            "type": "image",
+            "position": {
+              "x": 1200,
+              "y": 200,
+              "width": 560,
+              "height": 420
+            },
+            "style": {
+              "border": "1px solid #BDC3C7"
+            },
+            "content": "",
+            "accessibility": {
+              "role": "image",
+              "ariaLabel": "図表または画像",
+              "readingOrder": 3
+            },
+            "placeholder": "図表または画像"
+          },
+          {
+            "id": "caption",
+            "type": "caption",
+            "position": {
+              "x": 1200,
+              "y": 640,
+              "width": 560,
+              "height": 60
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 20,
+              "fontWeight": "normal",
+              "color": "#5D6D7E",
+              "textAlign": "center",
+              "lineHeight": 1.4
+            },
+            "content": "図1: 図表の説明",
+            "accessibility": {
+              "role": "caption",
+              "ariaLabel": "図表のキャプション",
+              "readingOrder": 4
+            },
+            "placeholder": "図1: 図表の説明"
+          },
+          {
+            "id": "key-points",
+            "type": "list",
+            "position": {
+              "x": 160,
+              "y": 840,
+              "width": 1000,
+              "height": 120
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 24,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "left",
+              "lineHeight": 1.5
+            },
+            "content": "• 重要なポイント1\n• 重要なポイント2",
+            "accessibility": {
+              "role": "list",
+              "ariaLabel": "重要ポイント",
+              "readingOrder": 5
+            },
+            "placeholder": "• 重要なポイント1\n• 重要なポイント2"
+          }
+        ]
+      },
+      "notes": "シンプルなコンテンツスライドです。テキストと視覚要素のバランスを保ってください。",
+      "wcagNotes": "見出し階層を維持し、画像には適切な代替テキストを提供してください。テキストサイズは最低18ptを確保しています。"
+    },
+    {
+      "id": "two-column-slide",
+      "name": "2カラムスライド",
+      "layout": {
+        "id": "two-column-layout",
+        "name": "2カラムレイアウト",
+        "width": 1920,
+        "height": 1080,
+        "backgroundColor": "#FFFFFF",
+        "elements": [
+          {
+            "id": "slide-title",
+            "type": "heading",
+            "position": {
+              "x": 160,
+              "y": 80,
+              "width": 1600,
+              "height": 100
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 44,
+              "fontWeight": "bold",
+              "color": "#2C3E50",
+              "textAlign": "left",
+              "lineHeight": 1.2
+            },
+            "content": "比較・対比スライド",
+            "accessibility": {
+              "role": "heading",
+              "ariaLabel": "スライドタイトル",
+              "readingOrder": 1
+            },
+            "placeholder": "比較・対比スライド",
+            "required": true
+          },
+          {
+            "id": "left-column-title",
+            "type": "heading",
+            "position": {
+              "x": 160,
+              "y": 200,
+              "width": 800,
+              "height": 80
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 32,
+              "fontWeight": "bold",
+              "color": "#34495E",
+              "textAlign": "center",
+              "lineHeight": 1.2
+            },
+            "content": "左側の項目",
+            "accessibility": {
+              "role": "heading",
+              "ariaLabel": "左側のタイトル",
+              "readingOrder": 2
+            },
+            "placeholder": "左側の項目"
+          },
+          {
+            "id": "right-column-title",
+            "type": "heading",
+            "position": {
+              "x": 960,
+              "y": 200,
+              "width": 800,
+              "height": 80
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 32,
+              "fontWeight": "bold",
+              "color": "#34495E",
+              "textAlign": "center",
+              "lineHeight": 1.2
+            },
+            "content": "右側の項目",
+            "accessibility": {
+              "role": "heading",
+              "ariaLabel": "右側のタイトル",
+              "readingOrder": 3
+            },
+            "placeholder": "右側の項目"
+          },
+          {
+            "id": "left-content",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 300,
+              "width": 800,
+              "height": 500
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 28,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "left",
+              "lineHeight": 1.5
+            },
+            "content": "左側のコンテンツをここに入力します。",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "左側のコンテンツ",
+              "readingOrder": 4
+            },
+            "placeholder": "左側のコンテンツをここに入力します。"
+          },
+          {
+            "id": "right-content",
+            "type": "text",
+            "position": {
+              "x": 960,
+              "y": 300,
+              "width": 800,
+              "height": 500
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 28,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "left",
+              "lineHeight": 1.5
+            },
+            "content": "右側のコンテンツをここに入力します。",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "右側のコンテンツ",
+              "readingOrder": 5
+            },
+            "placeholder": "右側のコンテンツをここに入力します。"
+          }
+        ]
+      },
+      "notes": "2カラムの比較・対比スライドです。左右の内容を明確に区別してください。",
+      "wcagNotes": "各カラムの見出し階層を維持し、内容の論理的な順序を保ってください。"
+    },
+    {
+      "id": "conclusion-slide",
+      "name": "結論スライド",
+      "layout": {
+        "id": "conclusion-layout",
+        "name": "結論レイアウト",
+        "width": 1920,
+        "height": 1080,
+        "backgroundColor": "#F8F9FA",
+        "elements": [
+          {
+            "id": "conclusion-title",
+            "type": "heading",
+            "position": {
+              "x": 160,
+              "y": 80,
+              "width": 1600,
+              "height": 100
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 44,
+              "fontWeight": "bold",
+              "color": "#2C3E50",
+              "textAlign": "left",
+              "lineHeight": 1.2
+            },
+            "content": "まとめ",
+            "accessibility": {
+              "role": "heading",
+              "ariaLabel": "まとめ",
+              "readingOrder": 1
+            },
+            "placeholder": "まとめ",
+            "required": true
+          },
+          {
+            "id": "key-points",
+            "type": "list",
+            "position": {
+              "x": 160,
+              "y": 200,
+              "width": 1600,
+              "height": 400
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 32,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "left",
+              "lineHeight": 1.5
+            },
+            "content": "• 主要なポイント1\n• 主要なポイント2\n• 主要なポイント3",
+            "accessibility": {
+              "role": "list",
+              "ariaLabel": "主要なポイント",
+              "readingOrder": 2
+            },
+            "placeholder": "• 主要なポイント1\n• 主要なポイント2\n• 主要なポイント3"
+          },
+          {
+            "id": "next-steps",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 640,
+              "width": 1600,
+              "height": 120
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 28,
+              "fontWeight": "normal",
+              "color": "#34495E",
+              "textAlign": "left",
+              "lineHeight": 1.5
+            },
+            "content": "次のステップや今後の展望",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "次のステップ",
+              "readingOrder": 3
+            },
+            "placeholder": "次のステップや今後の展望"
+          },
+          {
+            "id": "thank-you",
+            "type": "text",
+            "position": {
+              "x": 160,
+              "y": 820,
+              "width": 1600,
+              "height": 60
+            },
+            "style": {
+              "fontFamily": "Arial, sans-serif",
+              "fontSize": 32,
+              "fontWeight": "bold",
+              "color": "#2C3E50",
+              "textAlign": "center",
+              "lineHeight": 1.4
+            },
+            "content": "ご清聴ありがとうございました",
+            "accessibility": {
+              "role": "paragraph",
+              "ariaLabel": "締めの言葉",
+              "readingOrder": 4
+            },
+            "placeholder": "ご清聴ありがとうございました"
+          }
+        ]
+      },
+      "notes": "シンプルな結論スライドです。要点を明確にまとめてください。",
+      "wcagNotes": "箇条書きは適切なリスト構造を使用し、結論の要点を明確に伝えてください。"
+    }
+  ]
+}

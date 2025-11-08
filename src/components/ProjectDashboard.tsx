@@ -61,7 +61,7 @@ const DASHBOARD_LABEL = 'Dashboard Overview';
 const DASHBOARD_SUBTITLE = '\u30ef\u30fc\u30af\u30b9\u30da\u30fc\u30b9\u5168\u4f53\u3092\u30af\u30a4\u30c3\u30af\u306b\u30b5\u30de\u30ea\u30fc\u3002';
 const DEFAULT_SUBTITLE = '';
 const TRASH_SUBTITLE =
-  '\u524a\u9664\u3057\u305f\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u306f\u3053\u3053\u306b\u79fb\u52d5\u3057\u307e\u3059\u3002\u30b4\u30df\u7bb1\u3092\u7a7a\u306b\u3059\u308b\u3068\u5b8c\u5168\u306b\u524a\u9664\u3055\u308c\u307e\u3059\u3002';
+  '\u524a\u9664\u3057\u305f\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u306f\u3053\u3053\u306b\u79fb\u52d5\u3055\u308c\u307e\u3059\u3002\u30b4\u30df\u7bb1\u3092\u7a7a\u306b\u3059\u308b\u3068\u5143\u306b\u623b\u305b\u307e\u305b\u3093\u3002';
 const SEARCH_PROJECTS = '\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u3092\u691c\u7d22';
 const SEARCH_TRASH = '\u30b4\u30df\u7bb1\u3092\u691c\u7d22';
 const EMPTY_FOLDER_MESSAGE = '\u3053\u306e\u30d5\u30a9\u30eb\u30c0\u306b\u306f\u307e\u3060\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u304c\u3042\u308a\u307e\u305b\u3093\u3002';
@@ -102,6 +102,7 @@ const ProjectDashboard = ({
   const { user, signOut } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
   const isTrashView = activeFolderId === TRASH_FOLDER_ID;
 
@@ -178,6 +179,34 @@ const ProjectDashboard = ({
     [trashedProjects]
   );
 
+  useEffect(() => {
+    setExpandedFolders((previous) => {
+      let changed = false;
+      const next: Record<string, boolean> = {};
+      folders.forEach((folder) => {
+        if (previous[folder.id]) {
+          next[folder.id] = true;
+        }
+      });
+      if (JSON.stringify(previous) !== JSON.stringify(next)) {
+        changed = true;
+      }
+      return changed ? next : previous;
+    });
+  }, [folders]);
+
+  useEffect(() => {
+    if (!activeFolderId) {
+      return;
+    }
+    setExpandedFolders((previous) => {
+      if (previous[activeFolderId]) {
+        return previous;
+      }
+      return { ...previous, [activeFolderId]: true };
+    });
+  }, [activeFolderId]);
+
   const heroTitle = isTrashView ? 'Trash Center' : activeFolder ? activeFolder.name : DASHBOARD_LABEL;
   const heroDescription = isTrashView ? TRASH_SUBTITLE : headerSubtitle;
   const heroPrimaryValue = isTrashView
@@ -196,6 +225,13 @@ const ProjectDashboard = ({
       return;
     }
     onCreateFolder(name.trim());
+  };
+
+  const handleToggleFolderExpansion = (folderId: string) => {
+    setExpandedFolders((previous) => ({
+      ...previous,
+      [folderId]: !previous[folderId]
+    }));
   };
 
   const handleCreateProject = () => {
@@ -287,94 +323,192 @@ const ProjectDashboard = ({
   return (
     <div className="project-dashboard">
       <aside className="project-dashboard__sidebar" aria-label="プロジェクトメニュー">
-        <div className="project-dashboard__sidebar-header">
-          <div className="project-dashboard__branding">
-            <span className="project-dashboard__branding-logo" aria-hidden="true">
-              VS
-            </span>
-            <div>
-              <strong>ViewSure</strong>
-              <p>Projection Studio</p>
-            </div>
+        <div className="project-dashboard__sidebar-controls">
+          <button type="button" className="project-dashboard__icon-button project-dashboard__icon-button--ghost" aria-label="メニュー">
+            <span className="project-dashboard__icon-bars" aria-hidden="true" />
+          </button>
+          <button type="button" className="project-dashboard__icon-button project-dashboard__icon-button--ghost" aria-label="検索">
+            <svg viewBox="0 0 20 20" focusable="false">
+              <path
+                d="M9 3a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm0 2a4 4 0 1 0 2.83 6.83l3.2 3.21 1.42-1.42-3.2-3.2A4 4 0 0 0 9 5Z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="project-dashboard__sidebar-header project-dashboard__sidebar-header--stacked">
+          <div className="project-dashboard__branding project-dashboard__branding--stacked">
+            <span className="project-dashboard__branding-title">Title</span>
+            <span className="project-dashboard__branding-subtitle">Project Library</span>
           </div>
           <button type="button" className="project-dashboard__signout" onClick={() => signOut()}>
             サインアウト
           </button>
         </div>
-        <p className="project-dashboard__sidebar-description">
-          投影前の資料を整理し、フォルダ単位で管理できます。フォルダを選ぶと詳細が右側に表示されます。
-        </p>
         <nav className="project-dashboard__menu" aria-label="メインメニュー">
-          <div className="project-dashboard__menu-group">
-            <p className="project-dashboard__menu-label">Main Menu</p>
+          <div className="project-dashboard__quick-list">
             <button
               type="button"
-              className={`project-dashboard__menu-item${isDashboardView ? ' project-dashboard__menu-item--active' : ''}`}
+              className={`project-dashboard__quick-button${isDashboardView ? ' is-active' : ''}`}
               onClick={() => onSelectFolder(null)}
             >
-              <span className="project-dashboard__menu-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path
-                    d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-5H10v5H5a1 1 0 0 1-1-1v-9.5Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </span>
-              ダッシュボード
+              <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                <path
+                  d="M3 8.5 10 3l7 5.5V17a1 1 0 0 1-1 1h-4v-4H8v4H4a1 1 0 0 1-1-1V8.5Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>Dashboard</span>
             </button>
             <button
               type="button"
-              className={`project-dashboard__menu-item${isTrashView ? ' project-dashboard__menu-item--active' : ''}`}
+              className={`project-dashboard__quick-button${isTrashView ? ' is-active' : ''}`}
               onClick={() => onSelectFolder(TRASH_FOLDER_ID)}
             >
-              <span className="project-dashboard__menu-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path
-                    d="M9 3h6l1 2h5v2h-1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7H3V5h5l1-2Zm8 4H7v11h10V7Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </span>
-              {TRASH_LABEL}
-              {trashedProjects.length > 0 ? <span className="project-dashboard__badge">{trashedProjects.length}</span> : null}
+              <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                <path
+                  d="M7.5 3a1 1 0 0 0-.98.804L6.3 5H3v2h1l.9 10.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16 7h1V5h-3.3l-.22-1.196A1 1 0 0 0 12.5 3h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>Trash</span>
             </button>
           </div>
-          <div className="project-dashboard__menu-group">
-            <p className="project-dashboard__menu-label">Folder</p>
+          <div className="project-dashboard__section">
+            <div className="project-dashboard__section-header">
+              <span>Folders</span>
+              <span className="project-dashboard__section-indicator" aria-hidden="true">
+                <svg viewBox="0 0 16 16" focusable="false">
+                  <path d="M4 6 8 10 12 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
             <ul className="project-dashboard__folder-list">
-              {folders.map((folder) => (
-                <li key={folder.id} className={`project-dashboard__folder-item${folder.id === activeFolderId ? ' is-active' : ''}`}>
-                  <button
-                    type="button"
-                    className="project-dashboard__folder-button"
-                    onClick={() => onSelectFolder(folder.id)}
-                  >
-                    <span className="project-dashboard__folder-name">{folder.name}</span>
-                    <span className="project-dashboard__folder-meta">{folder.files.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="project-dashboard__folder-delete"
-                    onClick={(event) => handleDeleteFolder(event, folder)}
-                    aria-label={`「${folder.name}」フォルダを削除`}
-                  >
-                    <svg viewBox="0 0 20 20" focusable="false">
-                      <path
-                        d="M7.5 2a1 1 0 0 0-.98.804L6.3 4H3a1 1 0 1 0 0 2h.5l.9 11.06A2 2 0 0 0 6.39 19h7.22a2 2 0 0 0 1.99-1.94L16.5 6H17a1 1 0 1 0 0-2h-3.3l-.22-1.196A1 1 0 0 0 12.5 2h-5Zm1.3 2 .1-.5h2.2l.1.5H8.8Zm5.2 2-1 10.94a.5.5 0 0 1-.5.46H6.39a.5.5 0 0 1-.5-.46L4.9 6H15Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </button>
-                </li>
-              ))}
+              {folders.map((folder) => {
+                const isActive = folder.id === activeFolderId;
+                const hasItems = folder.files.length > 0;
+                const isExpanded = expandedFolders[folder.id] ?? false;
+                return (
+                  <li key={folder.id} className={`project-dashboard__folder-item${isActive ? ' is-active' : ''}`}>
+                    <div className="project-dashboard__folder-row">
+                      <button
+                        type="button"
+                        className="project-dashboard__folder-button"
+                        onClick={() => onSelectFolder(folder.id)}
+                      >
+                        <span
+                          className={`project-dashboard__folder-icon${hasItems ? '' : ' project-dashboard__folder-icon--doc'}`}
+                          aria-hidden="true"
+                        >
+                          {hasItems ? (
+                            <svg viewBox="0 0 24 24" focusable="false">
+                              <path
+                                d="M4 6a2 2 0 0 1 2-2h4l1.5 1.5H20a2 2 0 0 1 2 2V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Z"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                              />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" focusable="false">
+                              <path
+                                d="M6 3h8l5 5v13H6V3Zm8 0v5h5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="project-dashboard__folder-name">{folder.name}</span>
+                      </button>
+                      <div className="project-dashboard__folder-controls">
+                        <button
+                          type="button"
+                          className={`project-dashboard__folder-toggle${isExpanded ? ' is-open' : ''}`}
+                          onClick={() => handleToggleFolderExpansion(folder.id)}
+                          aria-label={`${folder.name} のプロジェクトを${isExpanded ? '閉じる' : '表示'}`}
+                        >
+                          <svg viewBox="0 0 16 16" focusable="false">
+                            <path d="M6 4 10 8 6 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          className="project-dashboard__folder-delete"
+                          onClick={(event) => handleDeleteFolder(event, folder)}
+                          aria-label={`「${folder.name}」フォルダを削除`}
+                        >
+                          <svg viewBox="0 0 18 18" focusable="false" aria-hidden="true">
+                            <path
+                              d="M6 3h6l1 1h3v2h-1l-.8 9.06A2 2 0 0 1 12.2 17H5.8a2 2 0 0 1-1.99-1.94L3 6H2V4h3l1-1Zm2 3v8m2-8v8"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.4"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    {folder.files.length > 0 ? (
+                      <ul
+                        className={`project-dashboard__project-list${
+                          isExpanded ? ' project-dashboard__project-list--open' : ''
+                        }`}
+                        style={{ maxHeight: isExpanded ? folder.files.length * 48 : undefined }}
+                      >
+                        {folder.files.map((file) => (
+                          <li key={file.id} className="project-dashboard__project-item">
+                            <span className="project-dashboard__project-icon" aria-hidden="true">
+                              <svg viewBox="0 0 20 20" focusable="false">
+                                <path
+                                  d="M5 3h6.5L15 6.5V17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.4"
+                                />
+                              </svg>
+                            </span>
+                            <div className="project-dashboard__project-details">
+                              <button
+                                type="button"
+                                className="project-dashboard__project-button"
+                                onClick={() => handleProjectOpen(file, folder)}
+                              >
+                                <span className="project-dashboard__project-name">{file.name}</span>
+                                <span className="project-dashboard__project-meta">{file.category}</span>
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                        <li className="project-dashboard__project-item project-dashboard__project-item--action">
+                          <button
+                            type="button"
+                            className="project-dashboard__project-add"
+                            onClick={() => {
+                              const name = window.prompt(PROMPT_NEW_PROJECT.replace('{folder}', folder.name));
+                              if (!name) {
+                                return;
+                              }
+                              onCreateProject(folder.id, name.trim());
+                              setExpandedFolders((previous) => ({ ...previous, [folder.id]: true }));
+                            }}
+                          >
+                            + プロジェクトを追加
+                          </button>
+                        </li>
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           </div>
+          <div className="project-dashboard__section project-dashboard__section--muted">
+          </div>
         </nav>
-        <div className="project-dashboard__sidebar-footer">
-          <button type="button" className="project-dashboard__button project-dashboard__button--ghost" onClick={handleCreateFolder}>
-            + {NEW_FOLDER_LABEL}
-          </button>
-        </div>
       </aside>
       <div className="project-dashboard__workspace">
         <header className="project-dashboard__topbar">
@@ -518,7 +652,7 @@ const ProjectDashboard = ({
         )}
 
         <section className={`project-dashboard__grid${isDashboardView ? '' : ' project-dashboard__grid--single'}`}>
-          <div className="project-dashboard__panel" aria-live="polite">
+          <div className="project-dashboard__panel project-dashboard__panel--flat" aria-live="polite">
             <div className="project-dashboard__panel-header">
               <div>
                 <h2 className="project-dashboard__panel-title">{headerTitle}</h2>
@@ -633,9 +767,24 @@ const ProjectDashboard = ({
                 </tbody>
               </table>
             </div>
+            {activeFolder && !isTrashView ? (
+              <button
+                type="button"
+                className="project-dashboard__table-add"
+                onClick={() => {
+                  const name = window.prompt(PROMPT_NEW_PROJECT.replace('{folder}', activeFolder.name));
+                  if (!name) {
+                    return;
+                  }
+                  onCreateProject(activeFolder.id, name.trim());
+                }}
+              >
+                + プロジェクトを追加
+              </button>
+            ) : null}
           </div>
           {isDashboardView && (
-          <aside className="project-dashboard__panel project-dashboard__panel--side">
+          <aside className="project-dashboard__panel project-dashboard__panel--flat project-dashboard__panel--side">
             <div className="project-dashboard__panel-header">
               <h3 className="project-dashboard__panel-title">最近の更新</h3>
               <span className="project-dashboard__chip">最新</span>
