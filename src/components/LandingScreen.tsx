@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import logoWhite from '../assets/ViewSureIconWhite.png';
 import { useAuth } from '../context/AuthContext';
 
 type LandingScreenProps = {
@@ -38,7 +39,7 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
     <div className="landing">
       <header className="landing__header">
         <div className="landing__brand">
-          <img src="/ViewSureIconWhite.png" alt="ViewSure" className="landing__logo" />
+          <img src={logoWhite} alt="ViewSure" className="landing__logo" />
           <span className="landing__brand-text">ViewSure</span>
         </div>
         <nav className="landing__nav" aria-label="サイトメニュー">
@@ -57,7 +58,7 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
         </button>
       </header>
       <main className="landing__hero">
-        <img src="/ViewSureIconWhite.png" alt="ViewSure" className="landing__hero-logo" />
+        <img src={logoWhite} alt="ViewSure" className="landing__hero-logo" />
         <div className="landing__eyebrow">Projection Copilot</div>
         <h1 className="landing__title">ViewSureでプロジェクター映えする資料へ</h1>
         <p className="landing__description">
