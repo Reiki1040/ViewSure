@@ -2228,6 +2228,8 @@ a {
     radial-gradient(120% 120% at 90% 0%, rgba(132, 78, 255, 0.28) 0%, transparent 62%),
     linear-gradient(170deg, #070b18 0%, #080b1b 45%, #0c1124 100%);
   color: #e8ecff;
+  opacity: 0;
+  animation: landingFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .landing__header {
@@ -2247,6 +2249,8 @@ a {
   backdrop-filter: blur(14px);
   border-radius: 0;
   z-index: 10;
+  opacity: 0;
+  animation: landingSlideDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.1s;
 }
 
 .landing__brand {
@@ -2316,6 +2320,7 @@ a {
   align-items: center;
   gap: 30px;
   padding: clamp(16px, 4vw, 32px);
+  position: relative;
 }
 
 .landing__hero-logo {
@@ -2323,6 +2328,8 @@ a {
   height: clamp(72px, 10vw, 120px);
   object-fit: contain;
   filter: drop-shadow(0 16px 28px rgba(18, 28, 68, 0.55));
+  opacity: 0;
+  animation: landingHeroUp 0.85s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.18s;
 }
 
 .landing__eyebrow {
@@ -2331,6 +2338,8 @@ a {
   text-transform: uppercase;
   font-weight: 600;
   color: rgba(166, 186, 255, 0.72);
+  opacity: 0;
+  animation: landingHeroUp 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.26s;
 }
 
 .landing__title {
@@ -2341,6 +2350,8 @@ a {
   background: linear-gradient(110deg, #78a9ff, #70e2ff, #9a83ff);
   -webkit-background-clip: text;
   color: transparent;
+  opacity: 0;
+  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.34s;
 }
 
 .landing__description {
@@ -2349,6 +2360,8 @@ a {
   font-size: 1.02rem;
   line-height: 1.9;
   color: rgba(203, 216, 255, 0.78);
+  opacity: 0;
+  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.42s;
 }
 
 .landing__cta-group {
@@ -2357,6 +2370,8 @@ a {
   gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
+  opacity: 0;
+  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.5s;
 }
 
 .landing__cta {
@@ -2402,6 +2417,62 @@ a {
   margin-top: 12px;
   color: #ff94a8;
   font-size: 0.9rem;
+}
+
+@keyframes landingFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(12px);
+  }
+  60% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingHeroUp {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+    filter: blur(10px);
+  }
+  70% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing,
+  .landing__header,
+  .landing__hero-logo,
+  .landing__eyebrow,
+  .landing__title,
+  .landing__description,
+  .landing__cta-group {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
 @media (max-width: 960px) {
