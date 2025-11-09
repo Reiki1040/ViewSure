@@ -2460,6 +2460,21 @@ a {
   }
 }
 
+@keyframes dashboardCardIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+    filter: blur(6px);
+  }
+  70% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing,
   .landing__header,
@@ -2467,7 +2482,9 @@ a {
   .landing__eyebrow,
   .landing__title,
   .landing__description,
-  .landing__cta-group {
+  .landing__cta-group,
+  .project-dashboard__card,
+  .project-dashboard__panel {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -3099,7 +3116,7 @@ a {
 
 .project-dashboard__button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 18px 26px rgba(4, 7, 18, 0.7);
+  box-shadow: none;
   border-color: rgba(168, 188, 255, 0.5);
 }
 
@@ -3112,7 +3129,7 @@ a {
   background: linear-gradient(140deg, #5f7bff, #485dff);
   color: #ffffff;
   border-color: rgba(168, 188, 255, 0.6);
-  box-shadow: 0 18px 32px rgba(46, 74, 170, 0.5);
+  box-shadow: none;
 }
 
 .project-dashboard__button--ghost {
@@ -3172,12 +3189,27 @@ a {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  opacity: 0;
+  transform: translateY(22px) scale(0.98);
+  animation: dashboardCardIn 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .project-dashboard__card--hero {
   background: linear-gradient(135deg, #3644ff, #7c64ff);
   color: #f5f6ff;
   border: none;
+}
+
+.project-dashboard__cards .project-dashboard__card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.project-dashboard__cards .project-dashboard__card:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.project-dashboard__cards .project-dashboard__card:nth-child(3) {
+  animation-delay: 0.19s;
 }
 
 .project-dashboard__card-label {
@@ -3301,6 +3333,17 @@ a {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  opacity: 0;
+  transform: translateY(22px) scale(0.98);
+  animation: dashboardCardIn 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.project-dashboard__panel:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.project-dashboard__panel:nth-child(2) {
+  animation-delay: 0.16s;
 }
 
 .project-dashboard__panel--flat {
