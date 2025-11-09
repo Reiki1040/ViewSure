@@ -2222,7 +2222,7 @@ a {
   flex-direction: column;
   align-items: center;
   padding: clamp(24px, 5vw, 64px);
-  padding-top: calc(clamp(12px, 3vw, 32px) + 64px);
+  padding-top: calc(clamp(10px, 2.8vw, 28px) + 60px);
   background:
     radial-gradient(120% 140% at 10% -10%, rgba(86, 121, 255, 0.32) 0%, transparent 55%),
     radial-gradient(120% 120% at 90% 0%, rgba(132, 78, 255, 0.28) 0%, transparent 62%),
@@ -2309,7 +2309,7 @@ a {
 
 .landing__hero {
   width: min(860px, 100%);
-  margin: clamp(24px, 6vw, 48px) auto 0;
+  margin: clamp(18px, 5.5vw, 40px) auto 0;
   text-align: center;
   display: flex;
   flex-direction: column;
