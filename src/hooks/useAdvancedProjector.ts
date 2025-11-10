@@ -82,15 +82,18 @@ export const useAdvancedProjector = () => {
   const [processedImage, setProcessedImage] = useState<HTMLCanvasElement | null>(null);
   const processingTimeoutRef = useRef<number | null>(null);
   
-  // 設定の更新
+  // 設定の更新（メモ化されたコールバック）
   const updateSettings = useCallback((newSettings: Partial<ProjectorPreviewSettings>) => {
-    setSettings(prevSettings => ({
-      ...prevSettings,
-      ...newSettings
-    }));
+    setSettings(prevSettings => {
+      // 変更がない場合は同じオブジェクトを返して再レンダリングを防止
+      const hasChanges = Object.keys(newSettings).some(key =>
+        JSON.stringify(prevSettings[key as keyof ProjectorPreviewSettings]) !== JSON.stringify(newSettings[key as keyof ProjectorPreviewSettings])
+      );
+      return hasChanges ? { ...prevSettings, ...newSettings } : prevSettings;
+    });
   }, []);
   
-  // 解像度設定の更新
+  // 解像度設定の更新（依存配列を最適化）
   const updateResolutionSettings = useCallback((resolutionSettings: Partial<ProjectorPreviewSettings['resolution']>) => {
     updateSettings({
       resolution: {
@@ -98,9 +101,9 @@ export const useAdvancedProjector = () => {
         ...resolutionSettings
       }
     });
-  }, [settings.resolution, updateSettings]);
+  }, [updateSettings]);
   
-  // 明るさ設定の更新
+  // 明るさ設定の更新（依存配列を最適化）
   const updateBrightnessSettings = useCallback((brightnessSettings: Partial<ProjectorPreviewSettings['brightness']>) => {
     updateSettings({
       brightness: {
@@ -108,9 +111,9 @@ export const useAdvancedProjector = () => {
         ...brightnessSettings
       }
     });
-  }, [settings.brightness, updateSettings]);
+  }, [updateSettings]);
   
-  // 色彩設定の更新
+  // 色彩設定の更新（依存配列を最適化）
   const updateColorSettings = useCallback((colorSettings: Partial<ProjectorPreviewSettings['color']>) => {
     updateSettings({
       color: {
@@ -118,9 +121,9 @@ export const useAdvancedProjector = () => {
         ...colorSettings
       }
     });
-  }, [settings.color, updateSettings]);
+  }, [updateSettings]);
   
-  // 環境設定の更新
+  // 環境設定の更新（依存配列を最適化）
   const updateEnvironmentSettings = useCallback((environmentSettings: Partial<ProjectorPreviewSettings['environment']>) => {
     updateSettings({
       environment: {
@@ -128,7 +131,7 @@ export const useAdvancedProjector = () => {
         ...environmentSettings
       }
     });
-  }, [settings.environment, updateSettings]);
+  }, [updateSettings]);
   
   // 画像処理の実行
   const processImage = useCallback(async (source: TexImageSource): Promise<HTMLCanvasElement> => {
@@ -341,11 +344,9 @@ export const useAdvancedProjector = () => {
     };
   }, []);
   
-  // 設定オブジェクトのメモ化
-  const settingsMemo = useMemo(() => settings, [settings]);
-  
-  return {
-    settings: settingsMemo,
+  // 戻り値のメモ化（不要な再レンダリングを防止）
+  return useMemo(() => ({
+    settings,
     isProcessing,
     luminanceAnalysis,
     colorDistribution,
@@ -360,5 +361,21 @@ export const useAdvancedProjector = () => {
     analyzeColorDistribution,
     applyPreset,
     resetSettings
-  };
+  }), [
+    settings,
+    isProcessing,
+    luminanceAnalysis,
+    colorDistribution,
+    processedImage,
+    updateSettings,
+    updateResolutionSettings,
+    updateBrightnessSettings,
+    updateColorSettings,
+    updateEnvironmentSettings,
+    processImage,
+    analyzeLuminance,
+    analyzeColorDistribution,
+    applyPreset,
+    resetSettings
+  ]);
 };

@@ -191,14 +191,7 @@ export const useProjectionRenderer = () => {
     );
     gl.uniform2f(uniformLocations.scale, scale.x, scale.y);
 
-    console.debug('[ProjectionRenderer] drawScene metrics', {
-      canvasSize: resources.canvasSize,
-      imageSize: resources.imageSize,
-      appliedScale: scale,
-      aspectRatio: currentAspectRef.current
-    });
-
-    // Set projector uniforms (queried each frame; could be cached if needed)
+    // Set projector uniforms (cached for performance)
     const pj = projectorRef.current;
     const uGamma = gl.getUniformLocation(program, 'u_gamma');
     const uBlackLift = gl.getUniformLocation(program, 'u_blackLift');
@@ -216,7 +209,7 @@ export const useProjectionRenderer = () => {
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  }, [adjustmentsRef]);
+  }, []);
 
   const scheduleDraw = useCallback(() => {
     if (rafHandleRef.current !== null) {
@@ -332,7 +325,7 @@ export const useProjectionRenderer = () => {
       };
       scheduleDraw();
     },
-    [adjustmentsRef, scheduleDraw]
+    [scheduleDraw]
   );
 
   const updateProjectorPreview = useCallback(
@@ -532,7 +525,7 @@ export const useProjectionRenderer = () => {
     return () => {
       disposed = true;
     };
-  }, [adjustmentsRef, scheduleDraw]);
+  }, [scheduleDraw]);
 
   return useMemo(
     () => ({
