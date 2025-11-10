@@ -1,7 +1,6 @@
 import type { DocumentAnalysis, WcagIssue } from '../utils/wcag/analyzer';
-import type { TextNodeAdjustments, TextRenderingModel } from './textModel';
+import type { TextNodeAdjustments, TextRenderingModel, Rectangle } from './textModel';
 import type { ProjectionAsset } from '../utils/fileLoader';
-import type { Rectangle } from './projector';
 
 export type WCAG22Guideline = 
   | '1.4.10' // Reflow

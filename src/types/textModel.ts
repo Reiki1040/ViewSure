@@ -1,3 +1,10 @@
+export interface Rectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export type TextNodeRole = 'heading' | 'body' | 'caption';
 
 export type TextNodeBaselineStyle = {
@@ -28,12 +35,7 @@ export type TextNodeComputedStyle = {
 };
 
 export type TextNodeLayout = {
-  bounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  bounds: Rectangle;
   baseline?: number;
   lineHeight?: number;
 };

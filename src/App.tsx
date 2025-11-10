@@ -20,6 +20,7 @@ import { useWcag22Helper } from './hooks/useWcag22Helper';
 import { useTextStructureAnalyzer } from './hooks/useTextStructureAnalyzer';
 import { useTemplateManager } from './hooks/useTemplateManager';
 import TextStructureSummary from './components/TextStructureSummary';
+import { errorHandler, CommonErrors } from './utils/errorHandler';
 import './styles/text-structure-summary.css';
 import './styles/template-selector.css';
 import './styles/auto-correction-panel.css';
@@ -30,7 +31,7 @@ import type { AccessibleTemplate } from './types/templates';
 const INITIAL_BRIGHTNESS = 100;
 const INITIAL_CONTRAST = 0;
 const DEFAULT_WCAG_ASPECT = 9 / 16;
-const INITIAL_STATUS_MESSAGE = '�t�@�C�����A�b�v���[�h���Ă�������';
+const INITIAL_STATUS_MESSAGE = 'ファイルをアップロードしてください';
 
 const WORKSPACE_STORAGE_PREFIX = 'viewsure.workspace';
 

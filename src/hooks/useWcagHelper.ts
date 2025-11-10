@@ -299,7 +299,7 @@ export const useWcagHelper = ({
     [textModel]
   );
 
-  const summaryAdjustments = useMemo(() => fontAdjustments, [fontAdjustments]);
+  const summaryAdjustments = fontAdjustments;
 
   return {
     analysis,
