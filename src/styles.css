@@ -48,44 +48,40 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: clamp(24px, 3vw, 48px);
-  padding: clamp(24px, 4vw, 64px) clamp(20px, 8vw, 96px) clamp(32px, 6vw, 96px);
+  gap: clamp(16px, 3vw, 36px);
+  padding: clamp(12px, 2vw, 28px) clamp(12px, 3vw, 32px) clamp(20px, 3vw, 52px);
+  align-items: stretch;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.hero-header {
-  padding-bottom: clamp(8px, 2vw, 24px);
-  border-bottom: 1px solid rgba(70, 82, 128, 0.15);
-}
-
-.hero-header h1 {
-  margin: 0;
-  font-size: clamp(2.4rem, 4vw, 3.2rem);
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: #10142b;
-}
-
-.hero-header p {
-  margin: 12px 0 0;
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  color: rgba(22, 28, 58, 0.8);
-  line-height: 1.7;
+.landing__header--app {
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 16px clamp(16px, 3vw, 26px);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(7, 9, 24, 0.9), rgba(18, 24, 45, 0.85));
+  border: none;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  margin-top: clamp(20px, 3vw, 60px);
 }
 
 .hero-stage__panel {
   width: min(980px, 100%);
+  max-width: 960px;
   min-height: clamp(320px, 40vw, 520px);
   border-radius: 48px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(160, 178, 228, 0.35);
-  box-shadow: 0 25px 60px rgba(18, 22, 48, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -956,37 +952,38 @@ a {
   box-shadow: 0 25px 60px rgba(17, 24, 50, 0.08);
 }
 
+.uploader--floating {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
 .drop-zone {
   position: relative;
-  padding: 28px 22px;
-  border-radius: 16px;
-  border: 1px dashed rgba(161, 181, 220, 0.9);
-  background: rgba(245, 248, 255, 0.75);
+  padding: clamp(32px, 4vw, 48px);
+  border-radius: 30px;
+  border: none;
+  background: transparent;
   text-align: center;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  transition: transform 0.25s ease;
 }
 
 .drop-zone::before {
   content: '';
   position: absolute;
-  inset: 0;
-  opacity: 0;
-  background: radial-gradient(circle at top, rgba(104, 144, 255, 0.25), rgba(104, 144, 255, 0));
-  transition: opacity 0.3s ease;
+  inset: 12px;
+  border-radius: 28px;
+  border: 2px dashed rgba(108, 136, 211, 0.35);
+  opacity: 0.8;
+  transition: opacity 0.3s ease, border-color 0.3s ease;
 }
 
-.drop-zone:hover::before {
+.drop-zone:hover::before,
+.drop-zone.is-active::before {
+  border-color: rgba(114, 150, 240, 0.85);
   opacity: 1;
-}
-
-.drop-zone.is-active {
-  border-color: rgba(114, 150, 240, 0.9);
-  box-shadow:
-    0 14px 26px rgba(68, 100, 190, 0.18),
-    0 0 0 1px rgba(114, 150, 240, 0.2);
-  transform: translateY(-1px);
 }
 
 .drop-zone.is-disabled {
@@ -1001,9 +998,13 @@ a {
 
 .drop-zone__icon {
   display: inline-flex;
-  font-size: 2rem;
-  margin-bottom: 8px;
-  color: rgba(120, 150, 230, 0.85);
+  margin-bottom: 12px;
+}
+
+.drop-zone__icon img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
 }
 
 .drop-zone__title {
@@ -1015,26 +1016,28 @@ a {
 
 .drop-zone__subtitle {
   margin: 0;
-  font-size: 0.85rem;
-  color: rgba(96, 106, 126, 0.7);
+  font-size: 0.9rem;
+  color: rgba(72, 84, 122, 0.75);
 }
 
 .drop-zone--hero {
-  padding: clamp(40px, 5vw, 64px);
-  border-radius: 42px;
-  border: 2.5px dashed rgba(108, 136, 211, 0.8);
-  background: #f6f8ff;
+  padding: clamp(40px, 5vw, 60px);
+  border-radius: 38px;
+  border: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 255, 0.85));
+  box-shadow:
+    0 22px 45px rgba(26, 38, 92, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .drop-zone--hero .drop-zone__icon {
   width: 90px;
   height: 90px;
-  border-radius: 28px;
+  border-radius: 32px;
   align-items: center;
   justify-content: center;
   font-size: 2.4rem;
   background: rgba(80, 104, 212, 0.12);
-  border: 2px dashed rgba(80, 104, 212, 0.35);
   color: #313f94;
 }
 
@@ -1051,15 +1054,17 @@ a {
 }
 
 .upload-status {
-  border-radius: 12px;
-  padding: 11px 14px;
-  font-size: 0.85rem;
-  color: rgba(62, 72, 92, 0.85);
-  border: 1px solid rgba(218, 222, 234, 0.9);
-  background: rgba(248, 249, 254, 0.95);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  color: rgba(48, 56, 88, 0.85);
+  border: none;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   min-height: 44px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 
 .controls {
@@ -1583,6 +1588,11 @@ a {
   box-shadow: 0 18px 45px rgba(20, 25, 52, 0.12);
 }
 
+.studio-command-bar__slider {
+  flex: 1;
+  min-width: 200px;
+}
+
 .studio-command-bar__button {
   width: 38px;
   height: 38px;
@@ -1802,6 +1812,46 @@ a {
 
   .control-panel {
     width: 100%;
+  }
+}
+
+@media (max-width: 1400px) {
+  .hero-app {
+    padding-inline: clamp(12px, 3vw, 28px);
+  }
+}
+
+@media (max-width: 1200px) {
+  .hero-stage__panel {
+    padding: clamp(18px, 4vw, 32px);
+  }
+
+  .studio-command-bar--hero {
+    width: 100%;
+    border-radius: 26px;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-stage {
+    margin-top: clamp(32px, 8vw, 80px);
+  }
+
+  .studio-command-bar {
+    width: 100%;
+    border-radius: 32px;
+  }
+
+  .studio-command-bar__slider {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .studio-command-bar__jump {
+    width: 100%;
+    justify-content: space-between;
+    padding-left: 0;
   }
 }
 
@@ -2564,6 +2614,14 @@ a {
   z-index: 10;
   opacity: 0;
   animation: landingSlideDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.1s;
+}
+
+.landing__header--app {
+  position: static;
+  box-shadow: none !important;
+  border-bottom: none;
+  background: linear-gradient(180deg, rgba(7, 9, 24, 0.9), rgba(18, 24, 45, 0.85));
+  border-radius: 16px;
 }
 
 .landing__brand {

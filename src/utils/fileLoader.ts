@@ -1,3 +1,15 @@
+/**
+ * ファイルローダーユーティリティ
+ *
+ * ViewSureでサポートされているファイル形式（PDF, PPTX, 画像）の読み込みと変換を担当します。
+ * 各ファイル形式に応じた適切なレンダリング方法を提供し、統一されたインターフェースで返します。
+ *
+ * サポート形式:
+ * - PDF (.pdf): PDF.jsを使用したページ単位のレンダリング
+ * - PowerPoint (.pptx): pptx-previewライブラリを使用したSVG変換
+ * - 画像 (PNG, JPEG, WEBP): 標準のImage要素を使用
+ * - HEIC/HEIF: heic2anyライブラリを使用したPNG変換
+ */
 import { createPdfRenderer, type PdfPageTextContent } from './pdf';
 import { renderPptxSlideToCanvas } from './ppt';
 

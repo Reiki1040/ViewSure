@@ -7,6 +7,7 @@ import {
   useRef,
   useState
 } from 'react';
+import importIcon from '../assets/import.png';
 
 type FileUploaderProps = {
   disabled?: boolean;
@@ -90,7 +91,7 @@ const FileUploader = forwardRef<FileUploaderHandle, FileUploaderProps>(({ disabl
   );
 
   return (
-    <section className="uploader uploader--hero" aria-label="資料アップロード">
+    <section className="uploader uploader--hero uploader--floating" aria-label="資料アップロード">
       <div
         className={`drop-zone drop-zone--hero ${disabled ? 'is-disabled' : ''} ${isDragActive ? 'is-active' : ''}`}
         onDragOver={handleDragOver}
@@ -114,7 +115,9 @@ const FileUploader = forwardRef<FileUploaderHandle, FileUploaderProps>(({ disabl
           onChange={handleChange}
           disabled={disabled}
         />
-        <span className="drop-zone__icon" aria-hidden="true">📁</span>
+        <span className="drop-zone__icon" aria-hidden="true">
+          <img src={importIcon} alt="ファイルアイコン" loading="lazy" />
+        </span>
         <p className="drop-zone__title">PDF または画像ファイルをドラッグ &amp; ドロップ</p>
         <p className="drop-zone__subtitle">PDF / PPTX / PNG / JPEG / WEBP / HEIC に対応</p>
       </div>
