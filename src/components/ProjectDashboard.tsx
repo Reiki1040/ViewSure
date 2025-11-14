@@ -1,5 +1,4 @@
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import type {
   ActiveProjectContext,
   ProjectFile,
@@ -100,7 +99,6 @@ const ProjectDashboard = ({
   onEmptyTrash
 }: ProjectDashboardProps) => {
   const dashboardRef = useRef<HTMLDivElement | null>(null);
-  const { user, signOut } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -360,9 +358,6 @@ const ProjectDashboard = ({
             <span className="project-dashboard__branding-title">ViewSure</span>
             <span className="project-dashboard__branding-subtitle">Project Library</span>
           </div>
-          <button type="button" className="project-dashboard__signout" onClick={() => signOut()}>
-            サインアウト
-          </button>
         </div>
         <nav className="project-dashboard__menu" aria-label="メインメニュー">
           <div className="project-dashboard__quick-list">
@@ -584,22 +579,6 @@ const ProjectDashboard = ({
             <button type="button" className="project-dashboard__button" onClick={handleCreateFolder}>
               + {NEW_FOLDER_LABEL}
             </button>
-            {user ? (
-              <div className="project-dashboard__user-chip">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={`${user.name} のアバター`} />
-                ) : (
-                  <span aria-hidden="true">{user.name.slice(0, 1)}</span>
-                )}
-                <div>
-                  <strong>{user.name}</strong>
-                  <small>{user.email}</small>
-                </div>
-                <button type="button" onClick={() => signOut()} aria-label="サインアウト">
-                  ↗
-                </button>
-              </div>
-            ) : null}
           </div>
         </header>
 
