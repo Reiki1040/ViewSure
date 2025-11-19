@@ -1,6 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import './styles/advanced-projector-controls.css';
-@import './styles/wcag22-summary.css';
 
 :root {
   color-scheme: light;
@@ -97,13 +95,24 @@ body {
   width: 100%;
 }
 
-.hero-uploader--hidden {
+.hero-uploader--center {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-viewport--full {
+  width: 100%;
+}
+
+.hero-viewport--hidden {
   position: absolute;
+  inset: 0;
   width: 1px;
   height: 1px;
-  overflow: hidden;
   opacity: 0;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .hero-viewport {

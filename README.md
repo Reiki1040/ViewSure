@@ -1,123 +1,78 @@
-# ViewSure – プロジェクション準備支援アプリ
+# ViewSure – シンプル PDF プレビュー
 
-ViewSure は、プレゼン資料を「投影する前に整える」ことを目的とした Web アプリケーションです。  
-大学での発表や学会の口頭発表、企業説明会などでプロジェクターを使う際に、資料の見やすさ・アクセシビリティを素早くチェックし、必要な調整を行えます。React（TypeScript）と Vite を用いたシングルページアプリケーションとして開発しています。
+ViewSure は「スタートメニュー → プレビュー画面」という構成を残したまま、**PDF の読み込みとページプレビュー**に特化した軽量アプリに整理しました。  
+今後の追加機能はこの安定したプレビュー基盤の上に積み上げていきます。
 
 ---
 
-## 1. 画面構成と役割
+## 1. 画面構成
 
 | 画面 | 役割 | 主な操作 |
 | --- | --- | --- |
-| **Landing Screen** | アプリの紹介とログイン／ゲスト利用の選択 | Google アカウントでのサインイン、または「試してみる」 |
-| **Project Dashboard** | プロジェクトの整理と選択 | フォルダ／プロジェクトの新規作成、検索、削除、Trash 管理 |
-| **Projection Studio** | 資料の読み込み・調整・書き出し | PDF/PPTX/画像の表示、明るさ・コントラスト調整、WCAG 解析、PDF 出力 |
-
-Landing でログイン後、Dashboard でプロジェクトを選び、Studio で資料を編集・確認する流れです。削除したプロジェクトは Trash タブに保管され、必要に応じて完全削除（復元は未実装）できます。
+| **Landing Screen** | アプリ紹介＋開始ボタン | 「ViewSure を始める」でプレビュー画面へ遷移 |
+| **Preview Screen** | PDF 読み込みとページ表示 | PDF アップロード、スライダー / 入力 / ボタンでページ移動 |
 
 ---
 
-## 2. 主な機能
+## 2. 現在の機能
 
-- **幅広いファイル形式の読み込み**  
-  PDF・PowerPoint（`.pptx`）・PNG/JPEG/WEBP/HEIC に対応。ドラッグ＆ドロップでも読み込めます。
-- **WebGL による投影プレビュー**  
-  明るさ・コントラストの調整を GPU で高速処理。画面全体のバランスを確認しながら設定できます。
-- **WCAG アクセシビリティ支援**  
-  PDF から抽出したテキストと背景色を解析し、コントラスト改善の提案やオーバーレイ表示を行います。
-- **ページナビゲーションとスクリーンショット**  
-  前後ページ移動、ページ番号ジャンプ、現在の画面を PDF として保存する機能があります。
-- **フォルダ／Trash によるプロジェクト管理**  
-  プロジェクトを自由に整理でき、削除したプロジェクトは Trash に移動します。Trash では個別削除または一括削除が可能です。
-- **ゲスト利用対応**  
-  Google アカウントがなくても試せます（セッション終了で状態はリセットされます）。
+- **PDF のドラッグ＆ドロップ / ファイル選択**（PDF 以外は拒否）
+- **Canvas によるプレビュー表示**（`pdfjs-dist` を使用）
+- **前後ボタン / スライダー / ページ番号入力**でのページ遷移
+- **ステータスメッセージ**で読み込み状況やエラーを通知
+
+※ WebGL 補正、WCAG 解析、エクスポートなどの機能は一旦すべて除去しています。
 
 ---
 
 ## 3. 技術スタック
 
-| 分野 | 使用技術 | 補足 |
+| 分野 | 技術 | 補足 |
 | --- | --- | --- |
-| フロントエンド | React 18 / TypeScript 5 | Hooks ベースで状態管理。`useProjectionRenderer`、`useWcagHelper` などのカスタムフックあり。 |
-| ビルドツール | Vite 5 | 軽量ビルドと高速 HMR を利用。 |
-| レンダリング | WebGL + GLSL | 明るさ・コントラスト調整やオーバーレイ描画を GPU で実行。 |
-| WASM | `src/wasm/tone_mapping.wasm` | 複雑なトーンマッピング計算を高速化。 |
-| ドキュメント処理 | `pdfjs-dist`, `pptx-preview` | PDF は Canvas 描画、PPTX は SVG 変換後に描画。 |
-| 画像変換 | `heic2any` | HEIC/HEIF を PNG に変換してレンダリング。 |
-| 認証 | Google Identity Services | `AuthContext` でサインイン／サインアウトとセッション復元を管理。 |
-| その他 | `jspdf`, `pdfjs-dist/legacy` など | PDF 出力、テキスト抽出、エラーハンドリング等で利用。 |
+| フロントエンド | React 18 + TypeScript 5 | 状態管理は `App.tsx` に集約 |
+| ビルド | Vite 5 | HMR と高速ビルド |
+| PDF 描画 | `pdfjs-dist` | `src/utils/pdf.ts` の `createPdfRenderer` を利用 |
+
+依存パッケージは `react`, `react-dom`, `pdfjs-dist` のみです。
 
 ---
 
 ## 4. ディレクトリ構成（抜粋）
 
 ```
-ViewSure/
-├── public/                     # 静的ファイル
-├── src/
-│   ├── App.tsx                 # 画面遷移とグローバル状態
-│   ├── components/             # UI コンポーネント群
-│   │   ├── LandingScreen.tsx
-│   │   ├── ProjectDashboard.tsx
-│   │   ├── ProjectionViewport.tsx など
-│   ├── context/AuthContext.tsx # Google 認証
-│   ├── hooks/useProjectionRenderer.ts
-│   ├── types/projects.ts       # プロジェクト・Trash の型定義
-│   ├── utils/                  # ファイル読込・WASM 呼び出し等
-│   ├── wasm/tone_mapping.wasm
-│   └── styles.css              # グローバルスタイル
-├── package.json
-├── vite.config.ts
-└── netlify.toml (任意)
+src/
+├── App.tsx
+├── assets/               # ロゴ等
+├── components/
+│   ├── LandingScreen.tsx
+│   ├── FileUploader.tsx
+│   ├── ProjectionViewport.tsx
+│   └── LoadingSpinner.tsx
+├── utils/pdf.ts
+├── styles.css
+└── main.tsx
 ```
 
 ---
 
-## 5. 環境構築と開発手順
+## 5. セットアップ
 
-### 5.1 必要なソフトウェア
-- Node.js 18 LTS 以上
-- npm（同梱）、または pnpm / yarn などのパッケージマネージャー
-- 最新の Chromium 系ブラウザ（WebGL が有効なもの）
-
-### 5.2 初期セットアップ
 ```bash
-npm install           # 依存パッケージのインストール
-npm run dev           # 開発サーバー起動（http://localhost:5173）
+npm install
+npm run dev       # http://localhost:5173
+npm run build
+npm run preview
+npm run typecheck
 ```
-
-### 5.3 ビルド・テスト
-```bash
-npm run typecheck     # TypeScript の型チェック
-npm run build         # 本番ビルド
-npm run preview       # 本番ビルドの動作確認（http://localhost:4173）
-```
-
-### 5.4 Google サインインを利用する場合
-1. `.env.local` を作成し、以下を設定します。  
-   `VITE_GOOGLE_CLIENT_ID=xxxxxxxxxxxxxxxx.apps.googleusercontent.com`
-2. Google Cloud Console で OAuth クライアント ID を発行し、承認済みリダイレクト URI に `http://localhost:5173` を追加します。
-3. `npm run dev` で起動し、サインインボタンから動作を確認します。
 
 ---
 
-## 6. Netlify を使ったデプロイ
+## 6. 今後の拡張メモ
 
-```bash
-netlify login                     # 初回のみ：ブラウザで認証
-netlify init  または  netlify link  # サイトの作成／既存サイトとの紐づけ
-netlify deploy --build             # プレビュー用のデプロイ
-netlify deploy --build --prod      # 本番デプロイ
-```
+1. ページキャッシュやズーム機能など、プレビュー体験の改善。
+2. プレビューが安定したことを確認してからアクセシビリティ支援などの追加機能を検討。
 
-推奨設定として `netlify.toml` を置いておくと便利です。
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
-```
-
----
+不具合や改善案があれば Issue / PR でお気軽にお知らせください。
 
 ## 7. 操作の流れ（例）
 1. **Landing Screen** で Google アカウントでログイン、またはゲストモードを選択。  

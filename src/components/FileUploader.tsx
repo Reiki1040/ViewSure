@@ -19,17 +19,7 @@ export type FileUploaderHandle = {
   openFileDialog: () => void;
 };
 
-const ACCEPTED_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'image/heic',
-  'image/heif',
-  '.heic',
-  '.heif'
-];
+const ACCEPTED_TYPES = ['application/pdf', '.pdf'];
 
 const FileUploader = forwardRef<FileUploaderHandle, FileUploaderProps>(({ disabled = false, statusMessage, onFileSelected }, ref) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -118,8 +108,8 @@ const FileUploader = forwardRef<FileUploaderHandle, FileUploaderProps>(({ disabl
         <span className="drop-zone__icon" aria-hidden="true">
           <img src={importIcon} alt="ファイルアイコン" loading="lazy" />
         </span>
-        <p className="drop-zone__title">PDF または画像ファイルをドラッグ &amp; ドロップ</p>
-        <p className="drop-zone__subtitle">PDF / PPTX / PNG / JPEG / WEBP / HEIC に対応</p>
+        <p className="drop-zone__title">PDF ファイルをドラッグ &amp; ドロップ</p>
+        <p className="drop-zone__subtitle">単一 PDF を読み込み、すぐにプレビューします</p>
       </div>
       <div className="upload-status" role="status" aria-live="polite">
         {statusMessage ? <span>{statusMessage}</span> : <span>準備完了。ファイルを読み込んでください。</span>}
