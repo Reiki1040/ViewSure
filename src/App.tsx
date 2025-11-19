@@ -3,44 +3,56 @@ import FileUploader, { type FileUploaderHandle } from './components/FileUploader
 import ProjectionViewport from './components/ProjectionViewport';
 import LandingScreen from './components/LandingScreen';
 import logoWhite from './assets/ViewSureIconWhite.png';
-import { createPdfRenderer } from './utils/pdf';
-
-type PdfRenderer = Awaited<ReturnType<typeof createPdfRenderer>>;
+import { usePdfRenderer } from './hooks/usePdfRenderer';
 
 const READY_MESSAGE = 'PDF を読み込んでください';
 
 const App = () => {
   const fileUploaderRef = useRef<FileUploaderHandle | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rendererRef = useRef<PdfRenderer | null>(null);
+
+  const {
+    renderer,
+    pageCount,
+    isLoading: pdfLoading,
+    error: pdfError,
+    loadPdf,
+    dispose
+  } = usePdfRenderer();
 
   const [isLandingVisible, setIsLandingVisible] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string>(READY_MESSAGE);
-  const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [pageCount, setPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInputValue, setPageInputValue] = useState('1');
   const [aspectRatio, setAspectRatio] = useState(9 / 16);
 
   useEffect(() => {
     return () => {
-      rendererRef.current?.dispose?.();
-      rendererRef.current = null;
+      dispose();
     };
-  }, []);
+  }, [dispose]);
 
   const renderPage = useCallback(
     async (pageNumber: number) => {
-      const renderer = rendererRef.current;
       const canvas = canvasRef.current;
       console.log('[App] renderPage start', { pageNumber, hasRenderer: Boolean(renderer), hasCanvas: Boolean(canvas) });
+      
       if (!renderer || !canvas) {
         console.warn('[App] renderPage skipped (renderer/canvas missing)');
         return;
       }
-
-      setIsLoading(true);
+      
+      // CanvasがDOMに完全に準備されているか確認
+      if (canvas.width === 0 || canvas.height === 0) {
+        console.warn('[App] renderPage skipped (canvas not ready)');
+        // 準備が整っていない場合、短い遅延後に再試行
+        setTimeout(() => {
+          void renderPage(pageNumber);
+        }, 50);
+        return;
+      }
+      
       try {
         const pageCanvas = await renderer.getPageCanvas(pageNumber - 1);
         const context = canvas.getContext('2d');
@@ -59,60 +71,46 @@ const App = () => {
 
         setCurrentPage(pageNumber);
         setPageInputValue(String(pageNumber));
-        setIsReady(true);
         console.log('[App] renderPage success', { pageNumber, width: pageCanvas.width, height: pageCanvas.height });
       } catch (error) {
         console.error('[App] renderPage error', error);
         setStatusMessage('ページの描画に失敗しました');
         setIsReady(false);
-      } finally {
-        setIsLoading(false);
       }
     },
-    []
+    [renderer]
   );
 
   const handleFileSelected = useCallback(
     async (file: File) => {
       console.log('[App] handleFileSelected start', file.name, file.type, file.size);
-      if (!file.name.toLowerCase().endsWith('.pdf')) {
-        setStatusMessage('PDF 形式のみ対応しています');
-        console.warn('[App] handleFileSelected rejected (not PDF)');
-        return;
-      }
-
-      setIsLoading(true);
+      
       try {
-        rendererRef.current?.dispose?.();
-        rendererRef.current = null;
-        const buffer = await file.arrayBuffer();
-        const renderer = await createPdfRenderer(buffer, 1.5);
-        rendererRef.current = renderer;
-        console.log('[App] PDF renderer ready', { pageCount: renderer.pageCount });
-
-        setPageCount(renderer.pageCount);
-        setStatusMessage(`${file.name} (${renderer.pageCount} ページ)`);
-        window.requestAnimationFrame(() => {
-          console.log('[App] requestAnimationFrame -> render first page');
+        await loadPdf(file);
+        // PDF読み込み成功後、状態をリセットして最初のページをレンダリング
+        setCurrentPage(1);
+        setPageInputValue('1');
+        setIsReady(true);
+        
+        // 短い遅延を入れてCanvasの準備を待つ
+        setTimeout(() => {
+          console.log('[App] setTimeout -> render first page');
           void renderPage(1);
-        });
+        }, 100);
       } catch (error) {
         console.error('[App] handleFileSelected error', error);
         setStatusMessage('PDF の読み込みに失敗しました');
         setIsReady(false);
-        setPageCount(0);
         setCurrentPage(1);
         setPageInputValue('1');
-      } finally {
-        setIsLoading(false);
       }
     },
-    [renderPage]
+    [loadPdf, renderPage]
   );
 
   const goToPage = useCallback(
     (page: number) => {
-      if (!rendererRef.current || pageCount === 0) {
+      if (!renderer || pageCount === 0) {
         return;
       }
       const clamped = Math.min(Math.max(page, 1), pageCount);
@@ -121,7 +119,7 @@ const App = () => {
       }
       void renderPage(clamped);
     },
-    [currentPage, pageCount, renderPage]
+    [currentPage, pageCount, renderPage, renderer]
   );
 
   const handlePageInputCommit = useCallback(() => {
@@ -133,26 +131,26 @@ const App = () => {
   }, [goToPage, pageInputValue]);
 
   const handleOpenFileDialog = useCallback(() => {
-    if (isLoading) {
+    if (pdfLoading) {
       return;
     }
     fileUploaderRef.current?.openFileDialog();
-  }, [isLoading]);
+  }, [pdfLoading]);
 
   const handleStart = useCallback(() => {
     setIsLandingVisible(false);
     setStatusMessage(READY_MESSAGE);
-    setPageCount(0);
     setCurrentPage(1);
     setPageInputValue('1');
     setIsReady(false);
-  }, []);
+    dispose();
+  }, [dispose]);
 
   const hasDocument = pageCount > 0;
-  const sliderDisabled = !hasDocument || pageCount <= 1 || isLoading;
+  const sliderDisabled = !hasDocument || pageCount <= 1 || pdfLoading;
   const sliderMax = Math.max(pageCount, 1);
   const sliderValue = Math.min(currentPage, sliderMax);
-  const heroStatus = isLoading ? '読み込み中です…' : statusMessage;
+  const heroStatus = pdfLoading ? '読み込み中です…' : (pdfError || statusMessage);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -209,7 +207,7 @@ const App = () => {
             <div className="hero-uploader hero-uploader--center">
               <FileUploader
                 ref={fileUploaderRef}
-                disabled={isLoading}
+                disabled={pdfLoading}
                 onFileSelected={handleFileSelected}
                 statusMessage={heroStatus}
               />
@@ -218,7 +216,7 @@ const App = () => {
           <div className={`hero-viewport hero-viewport--full${hasDocument ? '' : ' hero-viewport--hidden'}`}>
             <ProjectionViewport
               canvasRef={canvasRef}
-              isLoading={isLoading}
+              isLoading={pdfLoading}
               isReady={isReady}
               canGoPrev={currentPage > 1}
               canGoNext={currentPage < sliderMax}
@@ -234,7 +232,7 @@ const App = () => {
       </main>
 
       <section className="studio-command-bar studio-command-bar--hero" aria-label="スタジオ操作">
-        <button type="button" onClick={handleOpenFileDialog} disabled={isLoading}>
+        <button type="button" onClick={handleOpenFileDialog} disabled={pdfLoading}>
           <span aria-hidden="true">📤</span>
         </button>
         <div className="studio-command-bar__divider" aria-hidden="true" />

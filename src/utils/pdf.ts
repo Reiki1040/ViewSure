@@ -1,3 +1,5 @@
+import { PdfPageTextRun, PdfPageTextContent } from '../types/pdf';
+
 let pdfModulePromise: Promise<typeof import('pdfjs-dist/legacy/build/pdf.js')> | null = null;
 let workerConfigured = false;
 
@@ -14,21 +16,6 @@ const loadPdfModule = async () => {
   }
 
   return pdfModule;
-};
-
-export type PdfPageTextRun = {
-  text: string;
-  fontSize: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-export type PdfPageTextContent = {
-  width: number;
-  height: number;
-  runs: PdfPageTextRun[];
 };
 
 export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
@@ -51,47 +38,69 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   };
 
   const renderPage = async (index: number): Promise<HTMLCanvasElement> => {
+    // メモ化: キャッシュチェック
     if (cache.has(index)) {
       return cache.get(index)!;
     }
 
+    // メモ化: 進行中のリクエストチェック
     if (pending.has(index)) {
       return pending.get(index)!;
     }
 
     const pageNumber = ensurePageNumber(index);
 
-    const page = await pdf.getPage(pageNumber);
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-      throw new Error('PDF ページの描画用コンテキストを取得できませんでした');
-    }
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
+    // 非同期レンダリングプロセス
     const renderPromise = (async () => {
-      const renderTask = page.render({
-        canvasContext: context,
-        viewport
-      });
+      try {
+        const page = await pdf.getPage(pageNumber);
+        const viewport = page.getViewport({ scale });
+        
+        // キャンバス作成の最適化
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d', {
+          alpha: false, // パフォーマンス向上のためアルファチャンネルを無効化
+          willReadFrequently: false // 読み取り頻度が低いことを明示
+        });
 
-      await renderTask.promise;
-      page.cleanup();
-      if (disposed) {
+        if (!context) {
+          throw new Error('PDF ページの描画用コンテキストを取得できませんでした');
+        }
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        // レンダリング前にdisposed状態をチェック
+        if (disposed) {
+          throw new Error('PDF ドキュメントは破棄されています');
+        }
+
+        const renderTask = page.render({
+          canvasContext: context,
+          viewport
+        });
+
+        await renderTask.promise;
+        
+        // メモリ管理: ページリソースのクリーンアップ
+        page.cleanup();
+
+        // レンダリング完了後にdisposed状態を再チェック
+        if (disposed) {
+          throw new Error('PDF ドキュメントは破棄されています');
+        }
+
+        // キャッシュに保存
+        cache.set(index, canvas);
+        return canvas;
+      } catch (error) {
+        // エラー発生時は確実にpendingから削除
+        throw error;
+      } finally {
+        // 確実にpendingから削除（成功・失敗問わず）
         pending.delete(index);
-        throw new Error('PDF ドキュメントは破棄されています');
       }
-      cache.set(index, canvas);
-      pending.delete(index);
-      return canvas;
-    })().catch((error) => {
-      pending.delete(index);
-      throw error;
-    });
+    })();
 
     pending.set(index, renderPromise);
     return renderPromise;
