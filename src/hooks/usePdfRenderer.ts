@@ -5,6 +5,7 @@ type PdfRenderer = Awaited<ReturnType<typeof createPdfRenderer>>;
 
 interface UsePdfRendererReturn {
   renderer: PdfRenderer | null;
+  getRenderer: () => PdfRenderer | null;
   pageCount: number;
   isLoading: boolean;
   error: string | null;
@@ -56,8 +57,11 @@ export const usePdfRenderer = (): UsePdfRendererReturn => {
     setError(null);
   }, []);
 
+  const getRenderer = useCallback(() => rendererRef.current, []);
+
   return {
     renderer: rendererRef.current,
+    getRenderer,
     pageCount,
     isLoading,
     error,
