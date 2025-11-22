@@ -995,6 +995,11 @@ a {
   opacity: 1;
 }
 
+.drop-zone:hover,
+.drop-zone.is-active {
+  transform: translateY(-2px);
+}
+
 .drop-zone.is-disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1039,6 +1044,14 @@ a {
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+.drop-zone--hero:hover,
+.drop-zone--hero.is-active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(226, 234, 255, 0.95));
+  box-shadow:
+    0 26px 55px rgba(37, 53, 120, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
 .drop-zone--hero .drop-zone__icon {
   width: 90px;
   height: 90px;
@@ -1048,6 +1061,12 @@ a {
   font-size: 2.4rem;
   background: rgba(80, 104, 212, 0.12);
   color: #313f94;
+}
+
+.drop-zone--hero:hover .drop-zone__icon,
+.drop-zone--hero.is-active .drop-zone__icon {
+  background: rgba(79, 106, 255, 0.16);
+  color: #2735a0;
 }
 
 .drop-zone--hero .drop-zone__title {

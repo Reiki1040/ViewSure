@@ -12,7 +12,7 @@ const App = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const {
-    renderer,
+    getRenderer,
     pageCount,
     isLoading: pdfLoading,
     error: pdfError,
@@ -35,10 +35,11 @@ const App = () => {
 
   const renderPage = useCallback(
     async (pageNumber: number) => {
+      const rendererInstance = getRenderer();
       const canvas = canvasRef.current;
-      console.log('[App] renderPage start', { pageNumber, hasRenderer: Boolean(renderer), hasCanvas: Boolean(canvas) });
+      console.log('[App] renderPage start', { pageNumber, hasRenderer: Boolean(rendererInstance), hasCanvas: Boolean(canvas) });
       
-      if (!renderer || !canvas) {
+      if (!rendererInstance || !canvas) {
         console.warn('[App] renderPage skipped (renderer/canvas missing)');
         return;
       }
@@ -54,7 +55,7 @@ const App = () => {
       }
       
       try {
-        const pageCanvas = await renderer.getPageCanvas(pageNumber - 1);
+        const pageCanvas = await rendererInstance.getPageCanvas(pageNumber - 1);
         const context = canvas.getContext('2d');
         if (!context) {
           throw new Error('キャンバスコンテキストの取得に失敗しました');
@@ -78,7 +79,7 @@ const App = () => {
         setIsReady(false);
       }
     },
-    [renderer]
+    [getRenderer]
   );
 
   const handleFileSelected = useCallback(
@@ -110,7 +111,8 @@ const App = () => {
 
   const goToPage = useCallback(
     (page: number) => {
-      if (!renderer || pageCount === 0) {
+      const rendererInstance = getRenderer();
+      if (!rendererInstance || pageCount === 0) {
         return;
       }
       const clamped = Math.min(Math.max(page, 1), pageCount);
@@ -119,7 +121,7 @@ const App = () => {
       }
       void renderPage(clamped);
     },
-    [currentPage, pageCount, renderPage, renderer]
+    [currentPage, getRenderer, pageCount, renderPage]
   );
 
   const handlePageInputCommit = useCallback(() => {
