@@ -3,7 +3,14 @@ import FileUploader, { type FileUploaderHandle } from './components/FileUploader
 import ProjectionViewport from './components/ProjectionViewport';
 import LandingScreen from './components/LandingScreen';
 import logoWhite from './assets/ViewSureIconWhite.png';
+import firstPageIcon from './assets/first_page.png';
+import lastPageIcon from './assets/last_page.png';
+import nextIcon from './assets/next.png';
+import prevIcon from './assets/pre.png';
+import projectorPreviewIcon from './assets/project_preview.png';
+import uploadIcon from './assets/import.png';
 import { usePdfRenderer } from './hooks/usePdfRenderer';
+import { initWasm, applyToneMapping } from './utils/toneMapping';
 
 const READY_MESSAGE = 'PDF を読み込んでください';
 
@@ -21,11 +28,19 @@ const App = () => {
   } = usePdfRenderer();
 
   const [isLandingVisible, setIsLandingVisible] = useState(true);
+  const [isPreviewEnabled, setIsPreviewEnabled] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>(READY_MESSAGE);
   const [isReady, setIsReady] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInputValue, setPageInputValue] = useState('1');
   const [aspectRatio, setAspectRatio] = useState(9 / 16);
+
+  useEffect(() => {
+    initWasm().catch(err => {
+      console.error('Failed to initialize WASM in App', err);
+      // Optionally, set an error state to inform the user
+    });
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -66,6 +81,11 @@ const App = () => {
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.drawImage(pageCanvas, 0, 0);
 
+        // Apply tone mapping if preview is enabled
+        if (isPreviewEnabled) {
+          applyToneMapping(context, canvas.width, canvas.height);
+        }
+
         if (pageCanvas.width > 0 && pageCanvas.height > 0) {
           setAspectRatio(pageCanvas.height / pageCanvas.width);
         }
@@ -79,9 +99,16 @@ const App = () => {
         setIsReady(false);
       }
     },
-    [getRenderer]
+    [getRenderer, isPreviewEnabled]
   );
 
+  useEffect(() => {
+    if (pageCount > 0) {
+      void renderPage(currentPage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPreviewEnabled]);
+  
   const handleFileSelected = useCallback(
     async (file: File) => {
       console.log('[App] handleFileSelected start', file.name, file.type, file.size);
@@ -228,21 +255,18 @@ const App = () => {
             />
           </div>
         </div>
-        <p className="hero-stage__status" role="status" aria-live="polite">
-          {heroStatus}
-        </p>
       </main>
 
       <section className="studio-command-bar studio-command-bar--hero" aria-label="スタジオ操作">
-        <button type="button" onClick={handleOpenFileDialog} disabled={pdfLoading}>
-          <span aria-hidden="true">📤</span>
+        <button type="button" onClick={handleOpenFileDialog} disabled={pdfLoading} className="studio-command-bar__button" aria-label="PDFをアップロード">
+          <img src={uploadIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
         </button>
         <div className="studio-command-bar__divider" aria-hidden="true" />
-        <button type="button" onClick={() => goToPage(1)} disabled={sliderDisabled} aria-label="最初のページへ">
-          ⏮
+        <button type="button" onClick={() => goToPage(1)} disabled={sliderDisabled} aria-label="最初のページへ" className="studio-command-bar__button">
+          <img src={firstPageIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
         </button>
-        <button type="button" onClick={() => goToPage(currentPage - 1)} disabled={sliderDisabled || currentPage === 1} aria-label="前のページへ">
-          ⏪
+        <button type="button" onClick={() => goToPage(currentPage - 1)} disabled={sliderDisabled || currentPage === 1} aria-label="前のページへ" className="studio-command-bar__button">
+          <img src={prevIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
         </button>
         <div className="studio-command-bar__slider">
           <input
@@ -256,11 +280,21 @@ const App = () => {
           />
           <div className="studio-command-bar__value">{hasDocument ? `${currentPage} / ${sliderMax}` : '0 / 0'}</div>
         </div>
-        <button type="button" onClick={() => goToPage(currentPage + 1)} disabled={sliderDisabled || currentPage === sliderMax} aria-label="次のページへ">
-          ⏩
+        <button type="button" onClick={() => goToPage(currentPage + 1)} disabled={sliderDisabled || currentPage === sliderMax} aria-label="次のページへ" className="studio-command-bar__button">
+          <img src={nextIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
         </button>
-        <button type="button" onClick={() => goToPage(sliderMax)} disabled={sliderDisabled} aria-label="最後のページへ">
-          ⏭
+        <button type="button" onClick={() => goToPage(sliderMax)} disabled={sliderDisabled} aria-label="最後のページへ" className="studio-command-bar__button">
+          <img src={lastPageIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
+        </button>
+        <div className="studio-command-bar__divider" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => setIsPreviewEnabled(prev => !prev)}
+          disabled={!hasDocument || pdfLoading}
+          className={`studio-command-bar__button ${isPreviewEnabled ? 'studio-command-bar__button--active' : ''}`}
+          aria-label="プロジェクタープレビューを切り替え"
+        >
+          <img src={projectorPreviewIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
         </button>
         <div className="studio-command-bar__jump">
           <input
