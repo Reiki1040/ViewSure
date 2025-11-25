@@ -74,21 +74,21 @@ body {
 }
 
 .hero-stage__panel {
-  width: min(980px, 100%);
-  max-width: 960px;
-  min-height: clamp(320px, 40vw, 520px);
-  border-radius: 48px;
+  width: min(1080px, 100%);
+  max-width: 1080px;
+  min-height: clamp(380px, 46vw, 640px);
+  border-radius: 50px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(160, 178, 228, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(24px, 4vw, 48px);
+  padding: clamp(26px, 4vw, 52px);
   position: relative;
 }
 
 .hero-stage__panel--viewer {
-  padding: clamp(16px, 2vw, 32px);
+  padding: clamp(18px, 2.2vw, 34px);
 }
 
 .hero-uploader {
@@ -1601,9 +1601,9 @@ a {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 999px;
+  gap: 14px;
+  padding: 20px 24px;
+  border-radius: 32px;
   background: #f4f6ff;
   border: 1px solid rgba(136, 152, 210, 0.4);
 }
@@ -1622,16 +1622,28 @@ a {
 }
 
 .studio-command-bar__button {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   border: 1px solid rgba(108, 126, 190, 0.4);
   background: #fff;
-  font-size: 1rem;
+  font-size: 1.2rem;
   cursor: pointer;
   display: grid;
   place-items: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.studio-command-bar__button--active {
+  background: linear-gradient(180deg, #e8efff, #d8e4ff);
+  border-color: rgba(98, 126, 210, 0.8);
+  box-shadow: 0 10px 24px rgba(54, 72, 160, 0.25);
+}
+
+.studio-command-bar__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .studio-command-bar__button:disabled {
