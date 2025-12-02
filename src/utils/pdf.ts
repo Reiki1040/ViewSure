@@ -4,6 +4,7 @@ let pdfModulePromise: Promise<typeof import('pdfjs-dist/legacy/build/pdf.js')> |
 let workerConfigured = false;
 
 const loadPdfModule = async () => {
+  // pdf.js 本体を遅延読み込みし、workerSrc は初回だけ設定する。
   if (!pdfModulePromise) {
     pdfModulePromise = import('pdfjs-dist/legacy/build/pdf.js');
   }
@@ -22,6 +23,7 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   const pdfjs = await loadPdfModule();
   const loadingTask = pdfjs.getDocument({ data });
   const pdf = await loadingTask.promise;
+  // ページ描画のメモ化（完了済みと進行中の2種類）で重複レンダリングを防ぐ。
   const cache = new Map<number, HTMLCanvasElement>();
   const pending = new Map<number, Promise<HTMLCanvasElement>>();
   let disposed = false;
@@ -107,39 +109,40 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   };
 
   const getPageTextContent = async (index: number): Promise<PdfPageTextContent> => {
-    const pageNumber = ensurePageNumber(index);
-    const page = await pdf.getPage(pageNumber);
-    const viewport = page.getViewport({ scale });
-    const textContent = await page.getTextContent();
-    const runs: PdfPageTextRun[] = [];
+    // ページを取得し、テキストアイテムを viewport 座標系（左上原点）に正規化する。
+    const pageNumber = ensurePageNumber(index); // 0-based index を pdf.js の 1-based に変換し、範囲外をチェック
+    const page = await pdf.getPage(pageNumber); // 対象ページのオブジェクトを取得
+    const viewport = page.getViewport({ scale }); // 画面スケールに合わせた viewport を作成
+    const textContent = await page.getTextContent(); // 生のテキストアイテムを取得（座標は左下原点）
+    const runs: PdfPageTextRun[] = []; // 正規化済みのテキスト run をここに詰める
 
     textContent.items.forEach((item) => {
       if (!('str' in item) || !item.str.trim()) {
-        return;
+        return; // 文字列を持たないアイテムや空文字はスキップ
       }
-      const transform = item.transform;
-      const fontSize = Math.hypot(transform[0], transform[1]);
-      const x = transform[4];
-      const y = transform[5];
-      const width = item.width ?? fontSize * (item.str.length / 2);
-      const height = item.height ?? fontSize;
+      const transform = item.transform; // 変換行列 [a, b, c, d, e, f]（位置・回転・スケール）
+      const fontSize = Math.hypot(transform[0], transform[1]); // フォントサイズは行列のスケール成分から算出
+      const x = transform[4]; // 左下原点でのX位置
+      const y = transform[5]; // 左下原点でのY位置
+      const width = item.width ?? fontSize * (item.str.length / 2); // 幅が無ければ文字数から概算
+      const height = item.height ?? fontSize; // 高さが無ければフォントサイズを採用
 
       runs.push({
-        text: item.str,
-        fontSize,
-        x,
-        y: viewport.height - y - height,
-        width,
-        height
+        text: item.str, // 実際の文字列
+        fontSize, // フォントサイズ
+        x, // 左下原点のXをそのまま保存
+        y: viewport.height - y - height, // 左下原点 → 左上原点に合わせてYを反転
+        width, // テキスト領域の幅
+        height // テキスト領域の高さ
       });
     });
 
-    page.cleanup();
+    page.cleanup(); // ページリソースを解放
 
     return {
-      width: viewport.width,
-      height: viewport.height,
-      runs
+      width: viewport.width, // ページ幅（スケール後）
+      height: viewport.height, // ページ高さ（スケール後）
+      runs // 位置・サイズを正規化したテキスト run 一覧
     };
   };
 
