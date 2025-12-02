@@ -10,6 +10,8 @@ interface UsePdfRendererReturn {
   isLoading: boolean;
   error: string | null;
   loadPdf: (file: File) => Promise<void>;
+  loadPdfFromArrayBuffer: (buffer: ArrayBuffer) => Promise<void>;
+  getSourceBuffer: () => ArrayBuffer | null;
   dispose: () => void;
 }
 
@@ -18,28 +20,20 @@ interface UsePdfRendererReturn {
  */
 export const usePdfRenderer = (): UsePdfRendererReturn => {
   const rendererRef = useRef<PdfRenderer | null>(null);
+  const sourceBufferRef = useRef<ArrayBuffer | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadPdf = useCallback(async (file: File) => {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setError('PDF 形式のみ対応しています');
-      return;
-    }
-
+  const loadPdfFromArrayBuffer = useCallback(async (buffer: ArrayBuffer) => {
     setIsLoading(true);
     setError(null);
-
     try {
-      // 既存のレンダラーを破棄
       rendererRef.current?.dispose?.();
       rendererRef.current = null;
-
-      const buffer = await file.arrayBuffer();
+      sourceBufferRef.current = buffer;
       const renderer = await createPdfRenderer(buffer, 1.5);
       rendererRef.current = renderer;
-
       setPageCount(renderer.pageCount);
     } catch (err) {
       console.error('PDF読み込みエラー:', err);
@@ -50,14 +44,28 @@ export const usePdfRenderer = (): UsePdfRendererReturn => {
     }
   }, []);
 
+  const loadPdf = useCallback(
+    async (file: File) => {
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        setError('PDF 形式のみ対応しています');
+        return;
+      }
+      const buffer = await file.arrayBuffer();
+      await loadPdfFromArrayBuffer(buffer);
+    },
+    [loadPdfFromArrayBuffer]
+  );
+
   const dispose = useCallback(() => {
     rendererRef.current?.dispose?.();
     rendererRef.current = null;
     setPageCount(0);
     setError(null);
+    sourceBufferRef.current = null;
   }, []);
 
   const getRenderer = useCallback(() => rendererRef.current, []);
+  const getSourceBuffer = useCallback(() => sourceBufferRef.current, []);
 
   return {
     renderer: rendererRef.current,
@@ -66,6 +74,8 @@ export const usePdfRenderer = (): UsePdfRendererReturn => {
     isLoading,
     error,
     loadPdf,
+    loadPdfFromArrayBuffer,
+    getSourceBuffer,
     dispose,
   };
 };

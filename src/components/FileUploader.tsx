@@ -109,7 +109,6 @@ const FileUploader = forwardRef<FileUploaderHandle, FileUploaderProps>(({ disabl
           <img src={importIcon} alt="ファイルアイコン" loading="lazy" />
         </span>
         <p className="drop-zone__title">PDF ファイルをドラッグ &amp; ドロップ</p>
-        <p className="drop-zone__subtitle">単一 PDF を読み込み、すぐにプレビューします</p>
       </div>
       <div className="upload-status" role="status" aria-live="polite">
         {statusMessage ? <span>{statusMessage}</span> : <span>準備完了。ファイルを読み込んでください。</span>}

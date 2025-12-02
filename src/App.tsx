@@ -11,6 +11,9 @@ import projectorPreviewIcon from './assets/project_preview.png';
 import uploadIcon from './assets/import.png';
 import { usePdfRenderer } from './hooks/usePdfRenderer';
 import { initWasm, applyToneMapping } from './utils/toneMapping';
+import { analyzePageContrast, logContrastIssues } from './utils/wcag';
+import { applyAutoFix } from './utils/wcagFix';
+import { extractImagesFromPdf, type ImageCrop } from './utils/imageExtractor';
 
 const READY_MESSAGE = 'PDF を読み込んでください';
 
@@ -24,6 +27,7 @@ const App = () => {
     isLoading: pdfLoading,
     error: pdfError,
     loadPdf,
+    getSourceBuffer,
     dispose
   } = usePdfRenderer();
 
@@ -34,6 +38,8 @@ const App = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInputValue, setPageInputValue] = useState('1');
   const [aspectRatio, setAspectRatio] = useState(9 / 16);
+  const [isAutoFixEnabled, setIsAutoFixEnabled] = useState(false);
+  const [pageImages, setPageImages] = useState<Record<number, ImageCrop[]>>({});
 
   useEffect(() => {
     initWasm().catch(err => {
@@ -59,16 +65,6 @@ const App = () => {
         return;
       }
       
-      // CanvasがDOMに完全に準備されているか確認
-      if (canvas.width === 0 || canvas.height === 0) {
-        console.warn('[App] renderPage skipped (canvas not ready)');
-        // 準備が整っていない場合、短い遅延後に再試行
-        setTimeout(() => {
-          void renderPage(pageNumber);
-        }, 50);
-        return;
-      }
-      
       try {
         const pageCanvas = await rendererInstance.getPageCanvas(pageNumber - 1);
         const context = canvas.getContext('2d');
@@ -90,8 +86,22 @@ const App = () => {
           setAspectRatio(pageCanvas.height / pageCanvas.width);
         }
 
-        setCurrentPage(pageNumber);
-        setPageInputValue(String(pageNumber));
+        // WCAG Step1: コントラスト検査をログ出力（UIにはまだ表示しない）
+        try {
+          const textContent = await rendererInstance.getPageTextContent(pageNumber - 1);
+          const issues = analyzePageContrast(context, textContent);
+          logContrastIssues(pageNumber - 1, issues);
+
+          if (isAutoFixEnabled) {
+            const images = pageImages[pageNumber] || [];
+            applyAutoFix(context, textContent, issues, pageCanvas, images);
+          }
+        } catch (wcagError) {
+          console.warn('[WCAG] コントラスト検査に失敗しました', wcagError);
+        }
+
+        setCurrentPage((prev) => (prev === pageNumber ? prev : pageNumber));
+        setPageInputValue((prev) => (prev === String(pageNumber) ? prev : String(pageNumber)));
         console.log('[App] renderPage success', { pageNumber, width: pageCanvas.width, height: pageCanvas.height });
       } catch (error) {
         console.error('[App] renderPage error', error);
@@ -99,15 +109,9 @@ const App = () => {
         setIsReady(false);
       }
     },
-    [getRenderer, isPreviewEnabled]
+    [getRenderer, isPreviewEnabled, isAutoFixEnabled]
   );
 
-  useEffect(() => {
-    if (pageCount > 0) {
-      void renderPage(currentPage);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPreviewEnabled]);
   
   const handleFileSelected = useCallback(
     async (file: File) => {
@@ -119,12 +123,22 @@ const App = () => {
         setCurrentPage(1);
         setPageInputValue('1');
         setIsReady(true);
-        
-        // 短い遅延を入れてCanvasの準備を待つ
-        setTimeout(() => {
-          console.log('[App] setTimeout -> render first page');
-          void renderPage(1);
-        }, 100);
+        const buffer = getSourceBuffer();
+        if (buffer) {
+          void extractImagesFromPdf(buffer, 2).then((results) => {
+            const map: Record<number, ImageCrop[]> = {};
+            results.forEach((entry) => {
+              map[entry.page] = entry.images;
+            });
+            setPageImages(map);
+          }).catch((err) => {
+            console.warn('[Images] 画像抽出に失敗しました', err);
+            setPageImages({});
+          });
+        } else {
+          setPageImages({});
+        }
+        void renderPage(1);
       } catch (error) {
         console.error('[App] handleFileSelected error', error);
         setStatusMessage('PDF の読み込みに失敗しました');
@@ -165,6 +179,31 @@ const App = () => {
     }
     fileUploaderRef.current?.openFileDialog();
   }, [pdfLoading]);
+
+  const handleNavigateToLanding = useCallback((sectionId: string) => {
+    setIsLandingVisible(true);
+    // ランディング画面が描画された後にスクロール
+    requestAnimationFrame(() => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }, []);
+
+  const handleTogglePreview = useCallback(() => {
+    setIsPreviewEnabled((prev) => !prev);
+  }, []);
+
+  const handleToggleAutoFix = useCallback(() => {
+    setIsAutoFixEnabled((prev) => !prev);
+  }, []);
+
+  useEffect(() => {
+    if (pageCount > 0) {
+      void renderPage(currentPage);
+    }
+  }, [currentPage, pageCount, isPreviewEnabled, isAutoFixEnabled, renderPage]);
 
   const handleStart = useCallback(() => {
     setIsLandingVisible(false);
@@ -224,9 +263,33 @@ const App = () => {
           <span className="landing__brand-text">ViewSure</span>
         </div>
         <nav className="landing__nav" aria-label="サイトメニュー">
-          <a href="#features">特徴</a>
-          <a href="#contact">問い合わせ</a>
-          <a href="#help">ヘルプ</a>
+          <a
+            href="#features"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavigateToLanding('features');
+            }}
+          >
+            特徴
+          </a>
+          <a
+            href="#contact"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavigateToLanding('contact');
+            }}
+          >
+            問い合わせ
+          </a>
+          <a
+            href="#help"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavigateToLanding('help');
+            }}
+          >
+            使い方
+          </a>
         </nav>
       </header>
 
@@ -289,12 +352,21 @@ const App = () => {
         <div className="studio-command-bar__divider" aria-hidden="true" />
         <button
           type="button"
-          onClick={() => setIsPreviewEnabled(prev => !prev)}
+          onClick={handleTogglePreview}
           disabled={!hasDocument || pdfLoading}
           className={`studio-command-bar__button ${isPreviewEnabled ? 'studio-command-bar__button--active' : ''}`}
           aria-label="プロジェクタープレビューを切り替え"
         >
           <img src={projectorPreviewIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
+        </button>
+        <button
+          type="button"
+          onClick={handleToggleAutoFix}
+          disabled={!hasDocument || pdfLoading}
+          className={`studio-command-bar__button ${isAutoFixEnabled ? 'studio-command-bar__button--active' : ''}`}
+          aria-label="資料修正を適用"
+        >
+          修正
         </button>
         <div className="studio-command-bar__jump">
           <input
@@ -317,6 +389,7 @@ const App = () => {
           </button>
         </div>
       </section>
+
     </div>
   );
 };
