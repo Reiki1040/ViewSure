@@ -31,6 +31,60 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
           </button>
         </div>
       </main>
+      <section id="features" className="landing__features" aria-label="特徴">
+        <div className="landing__features-header">
+          <p>FEATURES</p>
+          <h2>特徴</h2>
+        </div>
+        <div className="landing__feature-grid">
+          <article className="landing__feature-card">
+            <span className="landing__feature-accent">01</span>
+            <h3>WCAGに基づく読みやすさ</h3>
+            <p>コントラスト・文字サイズ・見出し構造を自動チェックし、改善案を提示。修正後のプレビューで即確認。</p>
+          </article>
+          <article className="landing__feature-card">
+            <span className="landing__feature-accent">02</span>
+            <h3>プロジェクター環境の再現</h3>
+            <p>明るさ低下や白かぶりをシミュレーションし、投影時に見えづらい箇所を事前に把握できます。</p>
+          </article>
+        </div>
+      </section>
+      <section id="contact" className="landing__features" aria-label="問い合わせ">
+        <div className="landing__features-header">
+          <p>CONTACT</p>
+          <h2>問い合わせ</h2>
+        </div>
+          <div className="landing__feature-grid">
+            <article className="landing__feature-card">
+              <h3>サポート窓口</h3>
+              <p>導入相談やトライアルのご要望、機能リクエストを受け付けています。メール: e235738@ie.u-ryukyu.ac.jp</p>
+            </article>
+          <article className="landing__feature-card">
+            <h3>フィードバック</h3>
+            <p>不具合報告や改善案はアプリ内のフィードバックから。優先的に改善します。</p>
+          </article>
+        </div>
+      </section>
+      <section id="help" className="landing__features" aria-label="ヘルプ">
+        <div className="landing__features-header">
+          <p>HELP</p>
+          <h2>使い方</h2>
+        </div>
+        <div className="landing__feature-grid">
+          <article className="landing__feature-card">
+            <h3>1. PDFを読み込む</h3>
+            <p>アップロード画面からPDFをドロップ。自動でページプレビューが表示されます。</p>
+          </article>
+          <article className="landing__feature-card">
+            <h3>2. プレビューを確認</h3>
+            <p>修正ボタンでWCAG補正、プロジェクターボタンで投影シミュレーションを切り替え。</p>
+          </article>
+          <article className="landing__feature-card">
+            <h3>3. 修正を検討</h3>
+            <p>コントラストや文字サイズを確認し、必要に応じて再アップロードや別ツールでの編集を実施。</p>
+          </article>
+        </div>
+      </section>
     </div>
   );
 };

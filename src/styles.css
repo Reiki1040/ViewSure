@@ -20,6 +20,10 @@
   --vs-text-muted: rgba(31, 35, 56, 0.7);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 *,
 *::before,
 *::after {
@@ -2090,7 +2094,9 @@ a {
 .landing__description {
   margin: 0;
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.7;
+  max-width: 900px;
+  white-space: nowrap;
   color: rgba(220, 228, 255, 0.78);
 }
 
@@ -2291,67 +2297,89 @@ a {
 .landing__features {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 28px;
-  border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(3, 5, 12, 0.9);
+  gap: 20px;
+  padding: clamp(22px, 4vw, 36px);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: radial-gradient(120% 160% at 20% 10%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)), rgba(10, 14, 28, 0.78);
+  box-shadow:
+    0 25px 60px rgba(8, 12, 30, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  scroll-margin-top: 80px;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.5s;
 }
 
 .landing__features-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
 }
 
 .landing__features-header p {
   margin: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.32em;
-  color: rgba(164, 184, 255, 0.7);
+  font-size: 0.78rem;
+  letter-spacing: 0.34em;
+  color: rgba(210, 222, 255, 0.68);
 }
 
 .landing__features-header h2 {
   margin: 0;
-  font-size: 1.6rem;
-}
-
-.landing__features-header span {
-  margin-left: auto;
-  color: rgba(209, 220, 255, 0.72);
-  font-size: 0.9rem;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  letter-spacing: 0.01em;
+  width: 100%;
+  text-align: center;
+  color: #f8f9ff;
 }
 
 .landing__feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
 }
 
 .landing__feature-card {
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 18px 20px 24px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   min-height: 160px;
+  box-shadow:
+    0 12px 32px rgba(10, 12, 30, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .landing__feature-card h3 {
   margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: #f6f8ff;
+  letter-spacing: 0.01em;
 }
 
 .landing__feature-card p {
   margin: 0;
-  color: rgba(204, 214, 255, 0.75);
+  color: rgba(220, 228, 255, 0.78);
+  line-height: 1.65;
 }
 
 .landing__feature-accent {
-  font-size: 0.8rem;
-  letter-spacing: 0.28em;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(245, 248, 255, 0.9);
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
   margin-bottom: 12px;
-  color: rgba(255, 255, 255, 0.4);
 }
 
 .landing__footer {
@@ -2767,9 +2795,10 @@ a {
 
 .landing__description {
   margin: 0;
-  max-width: 640px;
+  max-width: 900px;
   font-size: 1.02rem;
-  line-height: 1.9;
+  line-height: 1.7;
+  white-space: nowrap;
   color: rgba(203, 216, 255, 0.78);
   opacity: 0;
   animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.42s;
