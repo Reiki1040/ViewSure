@@ -17,6 +17,9 @@ interface UsePdfRendererReturn {
 
 /**
  * PDFレンダリングの状態管理と操作を提供するカスタムフック
+ * 
+ * pdfjs-dist を使用したレンダラーインスタンスの生成、保持、破棄を管理する。
+ * メモリリークを防ぐための dispose 機構や、ローディング状態の管理も行う。
  */
 export const usePdfRenderer = (): UsePdfRendererReturn => {
   const rendererRef = useRef<PdfRenderer | null>(null);
@@ -25,13 +28,20 @@ export const usePdfRenderer = (): UsePdfRendererReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * ArrayBuffer から PDF を読み込む
+   */
   const loadPdfFromArrayBuffer = useCallback(async (buffer: ArrayBuffer) => {
     setIsLoading(true);
     setError(null);
     try {
+      // 既存のリソースがあれば解放
       rendererRef.current?.dispose?.();
       rendererRef.current = null;
+      
       sourceBufferRef.current = buffer;
+      
+      // レンダラーの生成 (スケールは1.5倍で固定)
       const renderer = await createPdfRenderer(buffer, 1.5);
       rendererRef.current = renderer;
       setPageCount(renderer.pageCount);
@@ -44,6 +54,9 @@ export const usePdfRenderer = (): UsePdfRendererReturn => {
     }
   }, []);
 
+  /**
+   * File オブジェクトから PDF を読み込む
+   */
   const loadPdf = useCallback(
     async (file: File) => {
       if (!file.name.toLowerCase().endsWith('.pdf')) {
@@ -56,6 +69,9 @@ export const usePdfRenderer = (): UsePdfRendererReturn => {
     [loadPdfFromArrayBuffer]
   );
 
+  /**
+   * リソースを解放し、状態をリセットする
+   */
   const dispose = useCallback(() => {
     rendererRef.current?.dispose?.();
     rendererRef.current = null;

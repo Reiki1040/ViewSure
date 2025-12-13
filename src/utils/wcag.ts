@@ -14,6 +14,16 @@ export interface ContrastIssue {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+/**
+ * 指定された矩形領域の平均色を計算する
+ * 
+ * @param ctx キャンバスコンテキスト
+ * @param x X座標
+ * @param y Y座標
+ * @param width 幅
+ * @param height 高さ
+ * @returns 平均RGB値
+ */
 const sampleAverageColor = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): Rgb => {
   const sx = Math.floor(clamp(x, 0, ctx.canvas.width - 1));
   const sy = Math.floor(clamp(y, 0, ctx.canvas.height - 1));
@@ -37,6 +47,10 @@ const sampleAverageColor = (ctx: CanvasRenderingContext2D, x: number, y: number,
   };
 };
 
+/**
+ * 相対輝度を計算する (WCAG 2.0 定義)
+ * https://www.w3.org/TR/WCAG20/#relativeluminancedef
+ */
 const relativeLuminance = (c: number) => {
   const srgb = c / 255;
   return srgb <= 0.03928 ? srgb / 12.92 : Math.pow((srgb + 0.055) / 1.055, 2.4);
@@ -44,6 +58,10 @@ const relativeLuminance = (c: number) => {
 
 const computeLuminance = ({ r, g, b }: Rgb) => 0.2126 * relativeLuminance(r) + 0.7152 * relativeLuminance(g) + 0.0722 * relativeLuminance(b);
 
+/**
+ * コントラスト比を計算する (WCAG 2.0 定義)
+ * https://www.w3.org/TR/WCAG20/#contrast-ratiodef
+ */
 const contrastRatio = (fg: Rgb, bg: Rgb) => {
   const L1 = computeLuminance(fg);
   const L2 = computeLuminance(bg);
@@ -54,10 +72,21 @@ const contrastRatio = (fg: Rgb, bg: Rgb) => {
 
 const isLargeText = (run: PdfPageTextRun) => run.fontSize >= 18;
 
+/**
+ * ページ内のテキスト要素のコントラストを解析する
+ * 
+ * 各テキストの描画領域から前景色を取得し、その周囲から背景色をサンプリングして
+ * コントラスト比がWCAG基準（AAレベル）を満たしているかチェックする。
+ * 
+ * @param ctx 描画済みキャンバスコンテキスト
+ * @param textContent PDFのテキスト解析結果
+ * @returns コントラスト問題のリスト
+ */
 export const analyzePageContrast = (ctx: CanvasRenderingContext2D, textContent: PdfPageTextContent): ContrastIssue[] => {
   const issues: ContrastIssue[] = [];
 
   textContent.runs.forEach((run) => {
+    // 文字領域の中心付近から色をサンプリング（前景色と仮定）
     const fgSampleSize = Math.max(2, Math.min(run.width, run.height) * 0.2);
     const fg = sampleAverageColor(
       ctx,
@@ -67,11 +96,14 @@ export const analyzePageContrast = (ctx: CanvasRenderingContext2D, textContent: 
       fgSampleSize
     );
 
+    // 文字領域の少し外側から色をサンプリング（背景色と仮定）
     const margin = 3;
     const bg = sampleAverageColor(ctx, run.x - margin, run.y - margin, Math.max(4, run.width + margin * 2), Math.max(4, run.height + margin * 2));
 
     const ratio = contrastRatio(fg, bg);
     const large = isLargeText(run);
+    
+    // WCAG 2.1 AA基準: 通常文字 4.5:1, 大きな文字 3:1
     const required = large ? 3 : 4.5;
     if (ratio < required) {
       issues.push({
