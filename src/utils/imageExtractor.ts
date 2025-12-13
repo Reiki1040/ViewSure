@@ -14,8 +14,8 @@ type LoadResult = {
   release: () => void;
 };
 
+// pdf.js を動的に読み込み、worker を設定した上で PDF ドキュメントを開く
 const loadPdf = async (buffer: ArrayBuffer): Promise<LoadResult> => {
-  // pdf.js を動的 import し、worker をセットした上でドキュメントを取得する。
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
   const workerSrcModule = await import('pdfjs-dist/legacy/build/pdf.worker.min.js?url');
   pdfjs.GlobalWorkerOptions.workerSrc = workerSrcModule.default;
@@ -33,7 +33,6 @@ const applyMatrix = (m: number[], x: number, y: number) => ({
 });
 
 const rectFromCTM = (matrix: number[], width: number, height: number) => {
-  // 画像の CTM をページ座標の外接矩形に変換する。
   const points = [
     applyMatrix(matrix, 0, 0),
     applyMatrix(matrix, width, 0),
@@ -61,7 +60,6 @@ const overlapArea = (a: { x: number; y: number; width: number; height: number },
 };
 
 const getTextBoxes = async (page: PDFPageProxy, viewport: any) => {
-  // 文字の bbox を収集し、画像候補の重なり判定に使う。
   const content = await page.getTextContent();
   return content.items
     .map((item) => {
@@ -95,7 +93,6 @@ const isTooSmall = (rect: { width: number; height: number }, pageWidth: number, 
 };
 
 const extractByOperators = async (page: PDFPageProxy, scale: number, textBoxes: { x: number; y: number; width: number; height: number }[]) => {
-  // 演算子リストから画像描画命令を拾い、CTM から座標を計算する。
   const { OPS, Util } = await import('pdfjs-dist/legacy/build/pdf.js');
   const viewport = page.getViewport({ scale });
   const opList = await page.getOperatorList();
@@ -119,12 +116,12 @@ const extractByOperators = async (page: PDFPageProxy, scale: number, textBoxes: 
       stack.push(Util.transform(current, args as number[]));
       continue;
     }
-    if (
+    const isImagePaint =
       fn === OPS.paintImageXObject ||
-      fn === OPS.paintImageMaskXObject ||
       fn === OPS.paintInlineImageXObject ||
-      fn === OPS.paintImageXObjectRepeat
-    ) {
+      fn === OPS.paintImageXObjectRepeat ||
+      fn === OPS.paintJpegXObject;
+    if (isImagePaint) {
       const imageId = (args as Array<string | number>)[0];
       const image = page.objs.get(imageId as string) as { width: number; height: number } | undefined;
       if (!image) continue;
@@ -141,7 +138,6 @@ const extractByOperators = async (page: PDFPageProxy, scale: number, textBoxes: 
 };
 
 const extractImagesFromPage = async (page: PDFPageProxy, scale = 2): Promise<ImageCrop[]> => {
-  // 1ページ単位で画像領域を抽出し、オフスクリーンに切り出す。
   const viewport = page.getViewport({ scale });
   const textBoxes = await getTextBoxes(page, viewport);
   const op = await extractByOperators(page, scale, textBoxes);
@@ -196,7 +192,6 @@ const extractImagesFromPage = async (page: PDFPageProxy, scale = 2): Promise<Ima
 };
 
 export const extractImagesFromPdf = async (buffer: ArrayBuffer, scale = 2) => {
-  // 全ページを走査し、画像をページごとのリストとして返す。
   const { pdf, release } = await loadPdf(buffer);
   const all: Array<{ page: number; images: ImageCrop[] }> = [];
   try {
@@ -207,7 +202,6 @@ export const extractImagesFromPdf = async (buffer: ArrayBuffer, scale = 2) => {
         all.push({ page: i, images });
       }
       page.cleanup();
-      page.destroy();
     }
   } finally {
     release();
@@ -216,7 +210,6 @@ export const extractImagesFromPdf = async (buffer: ArrayBuffer, scale = 2) => {
 };
 
 export const extractSlideImages = async (buffer: ArrayBuffer, scale = 2): Promise<string[]> => {
-  // 互換用: 抽出画像を data URL の配列で返す。
   const pages = await extractImagesFromPdf(buffer, scale);
   const urls: string[] = [];
   pages.forEach((page) => {

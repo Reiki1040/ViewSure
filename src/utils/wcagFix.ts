@@ -291,7 +291,8 @@ export const applyAutoFix = (
   textContent: PdfPageTextContent,
   issues: ContrastIssue[],
   pageCanvas: HTMLCanvasElement | null,
-  providedImages?: ImageCrop[]
+  providedImages?: ImageCrop[],
+  fontFamily = '"Inter", "Hiragino Sans", system-ui'
 ) => {
   const lineInfos = buildLineInfos(textContent);
   const { heading, bodyLines } = extractHeadingAndBody(lineInfos);
@@ -321,7 +322,7 @@ export const applyAutoFix = (
   ctx.strokeRect(cardPadding, cardPadding * 0.8, width - cardPadding * 2, height - cardPadding * 1.6);
 
   const headingFontSize = Math.max(32, Math.round(height * 0.065));
-  ctx.font = `700 ${headingFontSize}px "Inter", "Hiragino Sans", system-ui`;
+  ctx.font = `700 ${headingFontSize}px ${fontFamily}`;
   ctx.fillStyle = '#121531';
   ctx.textBaseline = 'top';
 
@@ -336,7 +337,7 @@ export const applyAutoFix = (
 
   cursorY += 16;
   const bulletFont = Math.max(22, Math.round(height * 0.038));
-  ctx.font = `600 ${bulletFont}px "Inter", "Hiragino Sans", system-ui`;
+  ctx.font = `600 ${bulletFont}px ${fontFamily}`;
 
   const galleryWidth = imageRegions.length > 0 ? Math.min(width * 0.28, 360) : 0;
   const galleryOffset = imageRegions.length > 0 ? galleryWidth + 40 : 0;

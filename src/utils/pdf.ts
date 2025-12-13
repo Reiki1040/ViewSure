@@ -4,7 +4,7 @@ let pdfModulePromise: Promise<typeof import('pdfjs-dist/legacy/build/pdf.js')> |
 let workerConfigured = false;
 
 const loadPdfModule = async () => {
-  // pdf.js 本体を遅延読み込みし、workerSrc は初回だけ設定する。
+  // pdf.js 本体を読み込みし、workerSrc初回だけ設定する。
   if (!pdfModulePromise) {
     pdfModulePromise = import('pdfjs-dist/legacy/build/pdf.js');
   }
@@ -19,6 +19,12 @@ const loadPdfModule = async () => {
   return pdfModule;
 };
 
+/**
+ * PDF バイナリから描画・テキスト抽出を行うユーティリティを生成する。
+ * - pdf.js をロードしてドキュメントを開く
+ * - ページ描画はキャッシュ/重複リクエストを統制
+ * - dispose で pdf.js のリソースを確実に破棄
+ */
 export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   const pdfjs = await loadPdfModule();
   const loadingTask = pdfjs.getDocument({ data });
@@ -29,6 +35,7 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   let disposed = false;
 
   const ensurePageNumber = (index: number) => {
+    // 呼び出し前に disposed か範囲外かをチェックするゲートキーパー
     if (disposed) {
       throw new Error('PDF ドキュメントは破棄されています');
     }
@@ -147,6 +154,7 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   };
 
   const dispose = () => {
+    // レンダラーと pdf.js のリソースを破棄し、再利用できない状態にする
     if (disposed) {
       return;
     }
