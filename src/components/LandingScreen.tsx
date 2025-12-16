@@ -39,13 +39,8 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
         <div className="landing__feature-grid">
           <article className="landing__feature-card">
             <span className="landing__feature-accent">01</span>
-            <h3>WCAGに基づく読みやすさ</h3>
-            <p>コントラスト・文字サイズ・見出し構造を自動チェックし、改善案を提示。修正後のプレビューで即確認。</p>
-          </article>
-          <article className="landing__feature-card">
-            <span className="landing__feature-accent">02</span>
-            <h3>プロジェクター環境の再現</h3>
-            <p>明るさ低下や白かぶりをシミュレーションし、投影時に見えづらい箇所を事前に把握できます。</p>
+            <h3>WCAGに基づく読みやすさチェック</h3>
+            <p>コントラストや文字サイズ、行間、情報量を自動チェック。問題があるページと箇所をリストアップします。</p>
           </article>
         </div>
       </section>
@@ -57,11 +52,11 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
           <div className="landing__feature-grid">
             <article className="landing__feature-card">
               <h3>サポート窓口</h3>
-              <p>導入相談やトライアルのご要望、機能リクエストを受け付けています。メール: e235738@ie.u-ryukyu.ac.jp</p>
+              <p>読みやすさチェックに関する質問や改善要望を受け付けています。メール: e235738@ie.u-ryukyu.ac.jp</p>
             </article>
           <article className="landing__feature-card">
             <h3>フィードバック</h3>
-            <p>不具合報告や改善案はアプリ内のフィードバックから。優先的に改善します。</p>
+            <p>検出精度や表示内容の改善案があればお知らせください。優先的に反映します。</p>
           </article>
         </div>
       </section>
@@ -73,15 +68,15 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
         <div className="landing__feature-grid">
           <article className="landing__feature-card">
             <h3>1. PDFを読み込む</h3>
-            <p>アップロード画面からPDFをドロップ。自動でページプレビューが表示されます。</p>
+            <p>アップロード画面からPDFをドロップまたは選択。自動でページプレビューが表示されます。</p>
           </article>
           <article className="landing__feature-card">
             <h3>2. プレビューを確認</h3>
-            <p>修正ボタンでWCAG補正、プロジェクターボタンで投影シミュレーションを切り替え。</p>
+            <p>ページ送り・スライダーで閲覧。必要に応じてプロジェクタープレビューモードをオンにできます。</p>
           </article>
           <article className="landing__feature-card">
-            <h3>3. 修正を検討</h3>
-            <p>コントラストや文字サイズを確認し、必要に応じて再アップロードや別ツールでの編集を実施。</p>
+            <h3>3. 読みにくさをチェック</h3>
+            <p>チェックボタンでWCAGに基づいた問題点を検出。問題ページと内容をリストで確認し、元の資料を修正してください。</p>
           </article>
         </div>
       </section>
