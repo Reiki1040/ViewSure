@@ -27,7 +27,11 @@ type PageFinding = {
   /** ページ番号 (1-based) */
   page: number; 
   /** 検出された問題や特徴のリスト */
-  flags: string[] 
+  flags: string[];
+  /** コントラストの詳細（テキスト抜粋と比率） */
+  contrastDetails?: string[];
+  /** 小さい文字の詳細（テキスト抜粋とサイズ） */
+  fontSizeDetails?: string[];
 };
 
 /**
@@ -66,14 +70,16 @@ const App = () => {
   const [aspectRatio, setAspectRatio] = useState(9 / 16);
   
   // -- State: Feature Flags & Data --
-  const [isAutoFixEnabled, setIsAutoFixEnabled] = useState(false); // 将来的な機能拡張用
-  const [pageImages, setPageImages] = useState<Record<number, ImageCrop[]>>({}); // 画像抽出結果
-  const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラリー用画像URL
+const [isAutoFixEnabled, setIsAutoFixEnabled] = useState(false); // 将来的な機能拡張用
+const [pageImages, setPageImages] = useState<Record<number, ImageCrop[]>>({}); // 画像抽出結果
+const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラリー用画像URL
 
-  // -- State: Readability Analysis --
+// -- State: Readability Analysis --
   const [readabilityReport, setReadabilityReport] = useState<string | null>(null);
   const [readabilityDetails, setReadabilityDetails] = useState<PageFinding[]>([]);
   const [readabilityFilter, setReadabilityFilter] = useState<string | null>(null);
+  const [readabilityExpanded, setReadabilityExpanded] = useState(false);
+  const [autoCheckPending, setAutoCheckPending] = useState(false);
 
 
   // -- Handlers & Logic --
@@ -150,6 +156,11 @@ const App = () => {
         setPageInputValue('1');
         setIsReady(true);
         setGalleryImages([]);
+        setReadabilityReport(null);
+        setReadabilityDetails([]);
+        setReadabilityFilter(null);
+        setReadabilityExpanded(false);
+        setAutoCheckPending(true);
         
         // 画像抽出処理（非同期で実行）
         const bufferExisting = getSourceBuffer();
@@ -183,6 +194,7 @@ const App = () => {
         setIsReady(false);
         setCurrentPage(1);
         setPageInputValue('1');
+        setAutoCheckPending(false);
       }
     },
     [loadPdf, renderPage, getSourceBuffer]
@@ -273,8 +285,9 @@ const App = () => {
         
         // 基本的な統計情報を計算
         const totalChars = textContent.runs.reduce((sum, run) => sum + run.text.trim().length, 0);
-        const minFont = textContent.runs.reduce((min, run) => Math.min(min, run.fontSize), Infinity);
-        const maxFont = textContent.runs.reduce((max, run) => Math.max(max, run.fontSize), 0);
+        // フォントサイズ判定は、スケールの影響を受けない originalFontSize を使用する
+        const smallFontRuns = textContent.runs.filter(r => r.originalFontSize < 18 && r.text.trim().length > 0);
+        const maxFont = textContent.runs.reduce((max, run) => Math.max(max, run.originalFontSize), 0);
 
         // 簡易的な行解析（Y座標が近いものを同じ行とみなす）
         const lines = [...textContent.runs]
@@ -290,9 +303,6 @@ const App = () => {
             return acc;
           }, []);
           
-        const pageWidth = textContent.width || pageCanvas.width;
-        const hasLongLine = lines.some((line) => line.width > pageWidth * 0.8);
-        
         // 行間（Gap）の解析
         const sortedLines = [...lines].sort((a, b) => a.y - b.y);
         const gaps: number[] = [];
@@ -301,12 +311,20 @@ const App = () => {
         }
         const minGap = gaps.length ? Math.min(...gaps) : Infinity;
 
-        // フラグ判定
         const flags: string[] = [];
-        if (totalChars > 1200) flags.push('情報量が多い');
-        if (minFont < 12) flags.push('小さい文字が含まれる');
+        let fontSizeDetails: string[] = [];
+        
+        if (totalChars > 400) flags.push(`情報量が多い (${totalChars}文字)`);
+        
+        if (smallFontRuns.length > 0) {
+          flags.push(`小さい文字が含まれる: ${smallFontRuns.length}箇所`);
+          // 詳細リストを作成（上位20件程度に絞る）
+          fontSizeDetails = smallFontRuns
+            .slice(0, 20)
+            .map(r => `「${r.text.trim().slice(0, 20)}${r.text.length > 20 ? '...' : ''}」 (${Math.round(r.originalFontSize * 10) / 10}pt)`);
+        }
+        
         if (maxFont > 72) flags.push('極端に大きい文字が含まれる');
-        if (hasLongLine) flags.push('横幅いっぱいの長い行がある');
         if (minGap < 12) flags.push('行間が詰まり気味');
         
         // コントラスト解析
@@ -314,12 +332,15 @@ const App = () => {
           const contrastIssues = analyzePageContrast(ctx, textContent);
           if (contrastIssues.length > 0) {
             const samples = contrastIssues.map((issue) => `「${issue.text}」(比 ${issue.ratio} < ${issue.required})`);
-            flags.push(`コントラストが低い要素: ${samples.join(' / ')}`);
+            flags.push(`コントラスト: ${contrastIssues.length}件`);
+            // コントラスト詳細は別に保持して、UIで展開表示する
+            perPageFindings.push({ page: index + 1, flags, contrastDetails: samples, fontSizeDetails });
+            continue; // このページは既に perPageFindings に追加したのでスキップ
           }
         }
 
         if (flags.length) {
-          perPageFindings.push({ page: index + 1, flags });
+          perPageFindings.push({ page: index + 1, flags, fontSizeDetails });
         }
       } catch (err) {
         console.error(`Page ${index + 1} analysis failed`, err);
@@ -331,10 +352,11 @@ const App = () => {
     const report = perPageFindings.length
       ? '読みやすさチェック: 問題があります'
       : '読みやすさチェック: 大きな問題は見つかりませんでした';
-      
+    
     setReadabilityReport(report);
     setReadabilityDetails(perPageFindings);
     setReadabilityFilter(null);
+    setReadabilityExpanded(false);
     setStatusMessage(report);
   }, [getRenderer, pageCount, setStatusMessage]);
 
@@ -381,6 +403,16 @@ const App = () => {
       void renderPage(currentPage);
     }
   }, [currentPage, pageCount, isPreviewEnabled, isAutoFixEnabled, renderPage]);
+
+  useEffect(() => {
+    if (!autoCheckPending) {
+      return;
+    }
+    if (!isLandingVisible && pageCount > 0 && !pdfLoading) {
+      setAutoCheckPending(false);
+      void handleReadabilityCheck();
+    }
+  }, [autoCheckPending, handleReadabilityCheck, isLandingVisible, pageCount, pdfLoading]);
 
   // キーボードショートカットの登録
   useEffect(() => {
@@ -429,6 +461,7 @@ const App = () => {
   const filteredFlags = currentReadability
     ? currentReadability.flags.filter((f) => !readabilityFilter || f.includes(readabilityFilter))
     : [];
+  const visibleFlags = readabilityExpanded ? filteredFlags : filteredFlags.slice(0, 5);
   const countByKeyword = (keyword: string) =>
     currentReadability ? currentReadability.flags.filter((f) => f.includes(keyword)).length : 0;
 
@@ -542,16 +575,7 @@ const App = () => {
           className={`studio-command-bar__button ${isPreviewEnabled ? 'studio-command-bar__button--active' : ''}`}
           aria-label="プロジェクタープレビューを切り替え"
         >
-          <img src={projectorPreviewIcon} alt="" aria-hidden="true" className="studio-command-bar__icon" />
-        </button>
-        <button
-          type="button"
-          onClick={handleReadabilityCheck}
-          disabled={!hasDocument || pdfLoading}
-          className="studio-command-bar__button"
-          aria-label="読みやすさをチェック"
-        >
-          チェック
+          <img src={projectorPreviewIcon} alt="" aria-hidden="true" className="studio-command-bar__icon studio-command-bar__icon--large" />
         </button>
         <div className="studio-command-bar__jump">
           <input
@@ -585,9 +609,6 @@ const App = () => {
             {readabilityDetails.length ? (
               <>
                 <div className="readability-report__summary">
-                  <span className="readability-chip readability-chip--pages">
-                    現在のページ: {currentPage}
-                  </span>
                   <button
                     type="button"
                     className={`readability-chip ${readabilityFilter === '情報量が多い' ? 'is-active' : ''}`}
@@ -604,13 +625,6 @@ const App = () => {
                   </button>
                   <button
                     type="button"
-                    className={`readability-chip ${readabilityFilter === '長い行' ? 'is-active' : ''}`}
-                    onClick={() => setReadabilityFilter(readabilityFilter === '長い行' ? null : '長い行')}
-                  >
-                    長い行: {countByKeyword('長い行')}
-                  </button>
-                  <button
-                    type="button"
                     className={`readability-chip ${readabilityFilter === '行間' ? 'is-active' : ''}`}
                     onClick={() => setReadabilityFilter(readabilityFilter === '行間' ? null : '行間')}
                   >
@@ -618,7 +632,7 @@ const App = () => {
                   </button>
                   <button
                     type="button"
-                    className={`readability-chip readability-chip--alert ${readabilityFilter === 'コントラスト' ? 'is-active' : ''}`}
+                    className={`readability-chip ${readabilityFilter === 'コントラスト' ? 'is-active' : ''}`}
                     onClick={() => setReadabilityFilter(readabilityFilter === 'コントラスト' ? null : 'コントラスト')}
                   >
                     コントラスト: {countByKeyword('コントラスト')}
@@ -628,12 +642,52 @@ const App = () => {
                   {currentReadability ? (
                     filteredFlags.length ? (
                       <div className="readability-report__item">
-                        <div className="readability-report__item-page">ページ {currentReadability.page}</div>
-                        <div className="readability-report__item-flags">
-                          {filteredFlags.map((flag, idx) => (
-                            <span className="readability-tag" key={`${currentReadability.page}-${idx}`}>{flag}</span>
-                          ))}
+                        <div className="readability-report__item-header">
+                          <div className="readability-report__item-page">ページ {currentReadability.page}</div>
+                          <div className="readability-report__item-flags">
+                            {visibleFlags.map((flag, idx) => (
+                              <span className="readability-tag" key={`${currentReadability.page}-${idx}`}>{flag}</span>
+                            ))}
+                            {!readabilityExpanded && filteredFlags.length > visibleFlags.length ? (
+                              <button
+                                type="button"
+                                className="readability-toggle"
+                                onClick={() => setReadabilityExpanded(true)}
+                              >
+                                残り {filteredFlags.length - visibleFlags.length} 件を表示
+                              </button>
+                            ) : null}
+                            {readabilityExpanded && filteredFlags.length > 5 ? (
+                              <button
+                                type="button"
+                                className="readability-toggle"
+                                onClick={() => setReadabilityExpanded(false)}
+                              >
+                                折りたたむ
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
+                        {currentReadability.contrastDetails && (!readabilityFilter || readabilityFilter === 'コントラスト') ? (
+                          <details className="readability-contrast-details">
+                            <summary>コントラストの詳細 ({currentReadability.contrastDetails.length} 件)</summary>
+                            <ul>
+                              {currentReadability.contrastDetails.map((detail, idx) => (
+                                <li key={`${currentReadability.page}-contrast-${idx}`}>{detail}</li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
+                        {currentReadability.fontSizeDetails && currentReadability.fontSizeDetails.length > 0 && (!readabilityFilter || readabilityFilter === '小さい文字') ? (
+                          <details className="readability-contrast-details">
+                            <summary>小さい文字の詳細 ({currentReadability.fontSizeDetails.length} 件)</summary>
+                            <ul>
+                              {currentReadability.fontSizeDetails.map((detail, idx) => (
+                                <li key={`${currentReadability.page}-font-${idx}`}>{detail}</li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="readability-report__item">
@@ -657,6 +711,19 @@ const App = () => {
           </div>
         </section>
       ) : null}
+      
+      <section className="readability-guide" aria-label="読みやすさ判定の基準">
+        <h3>読みづらさ判定の基準</h3>
+        <ul>
+          <li><strong>文字が小さすぎる:</strong> 18pt未満はデスクトップでも読みにくく、プロジェクター投影時にはさらに視認性が低下するため、注意喚起します。</li>
+          <li><strong>文字が大きすぎる:</strong> 72pt超の特大文字はバランスを崩しがちで、画面を圧迫するため指摘します。</li>
+          <li><strong>行間が狭い:</strong> 行と行の間隔がほとんどないページでは詰まって見えるため、行間不足を指摘します。</li>
+          <li><strong>情報量が多すぎる:</strong> 1ページ内に文章が詰め込み過ぎている場合（文字数が多い）、読みやすさ低下のサインとしてお知らせします。</li>
+          <li><strong>コントラスト不足:</strong> 文字と背景の明るさの差が小さい（WCAGの推奨値を下回る）箇所を見つけて報告します。</li>
+        </ul>
+        <p>目安となる適切な文字サイズ: 本文は 14〜18px 程度、見出しは 20〜32px 程度にすると、一般的なディスプレイやプロジェクターでも読みやすくなります。</p>
+        <p>※ 実際の修正は行いません。指摘を参考に元の資料を編集してください。</p>
+      </section>
 
     </div>
   );
