@@ -5,6 +5,7 @@
 export interface PdfPageTextRun {
   text: string;
   fontSize: number;
+  originalFontSize: number;
   x: number;
   y: number;
   width: number;
