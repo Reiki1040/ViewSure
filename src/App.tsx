@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FileUploader, { type FileUploaderHandle } from './components/FileUploader';
 import ProjectionViewport from './components/ProjectionViewport';
-import LandingScreen from './components/LandingScreen';
 
 // Assets
 import logoWhite from './assets/ViewSureIconWhite.png';
@@ -56,8 +55,6 @@ const App = () => {
     dispose
   } = usePdfRenderer();
 
-  // -- State: UI Visibility --
-  const [isLandingVisible, setIsLandingVisible] = useState(true);
   const [isPreviewEnabled, setIsPreviewEnabled] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>(READY_MESSAGE);
   const [isReady, setIsReady] = useState(false);
@@ -80,6 +77,7 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   const [readabilityFilter, setReadabilityFilter] = useState<string | null>(null);
   const [readabilityExpanded, setReadabilityExpanded] = useState(false);
   const [autoCheckPending, setAutoCheckPending] = useState(false);
+  const [isGuideVisible, setIsGuideVisible] = useState(false);
 
 
   // -- Handlers & Logic --
@@ -239,20 +237,6 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     fileUploaderRef.current?.openFileDialog();
   }, [pdfLoading]);
 
-  /**
-   * ランディングページ内のセクションへスクロールする
-   */
-  const handleNavigateToLanding = useCallback((sectionId: string) => {
-    setIsLandingVisible(true);
-    // ランディング画面が描画された後にスクロール
-    requestAnimationFrame(() => {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  }, []);
-
   const handleTogglePreview = useCallback(() => {
     setIsPreviewEnabled((prev) => !prev);
   }, []);
@@ -360,19 +344,6 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     setStatusMessage(report);
   }, [getRenderer, pageCount, setStatusMessage]);
 
-  /**
-   * スタート画面からアプリ画面へ遷移する
-   */
-  const handleStart = useCallback(() => {
-    setIsLandingVisible(false);
-    setStatusMessage(READY_MESSAGE);
-    setCurrentPage(1);
-    setPageInputValue('1');
-    setIsReady(false);
-    setGalleryImages([]);
-    dispose();
-  }, [dispose]);
-
 
   // -- Effects --
 
@@ -408,17 +379,17 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     if (!autoCheckPending) {
       return;
     }
-    if (!isLandingVisible && pageCount > 0 && !pdfLoading) {
+    if (pageCount > 0 && !pdfLoading) {
       setAutoCheckPending(false);
       void handleReadabilityCheck();
     }
-  }, [autoCheckPending, handleReadabilityCheck, isLandingVisible, pageCount, pdfLoading]);
+  }, [autoCheckPending, handleReadabilityCheck, pageCount, pdfLoading]);
 
   // キーボードショートカットの登録
   useEffect(() => {
     const hasDocument = pageCount > 0;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!hasDocument || isLandingVisible) {
+      if (!hasDocument) {
         return;
       }
       // 入力フォーム等での操作時は無視
@@ -446,7 +417,7 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [goToPage, pageCount, currentPage, isLandingVisible]); // pageCountを依存配列に追加
+  }, [goToPage, pageCount, currentPage]); // pageCountを依存配列に追加
 
   // -- Render Helpers --
   
@@ -465,11 +436,6 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   const countByKeyword = (keyword: string) =>
     currentReadability ? currentReadability.flags.filter((f) => f.includes(keyword)).length : 0;
 
-
-  if (isLandingVisible) {
-    return <LandingScreen onStart={handleStart} />;
-  }
-
   return (
     <div className="hero-app">
       {/* Header */}
@@ -478,35 +444,6 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
           <img src={logoWhite} alt="ViewSure" className="landing__logo" />
           <span className="landing__brand-text">ViewSure</span>
         </div>
-        <nav className="landing__nav" aria-label="サイトメニュー">
-          <a
-            href="#features"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavigateToLanding('features');
-            }}
-          >
-            特徴
-          </a>
-          <a
-            href="#contact"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavigateToLanding('contact');
-            }}
-          >
-            問い合わせ
-          </a>
-          <a
-            href="#help"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNavigateToLanding('help');
-            }}
-          >
-            使い方
-          </a>
-        </nav>
       </header>
 
       {/* Main Stage */}
@@ -534,6 +471,131 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
               aspectRatio={aspectRatio}
             />
           </div>
+          <aside className="readability-side-panel">
+              <div className="readability-report__body">
+                <h3>読みやすさチェック結果</h3>
+                {hasDocument && readabilityReport ? (
+                  <>
+                  <p>{readabilityReport}</p>
+                {readabilityDetails.length ? (
+                  <>
+                    <div className="readability-report__summary">
+                      <button
+                        type="button"
+                        className={`readability-chip ${readabilityFilter === '情報量が多い' ? 'is-active' : ''}`}
+                        onClick={() => setReadabilityFilter(readabilityFilter === '情報量が多い' ? null : '情報量が多い')}
+                      >
+                        情報量多い: {countByKeyword('情報量が多い')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`readability-chip ${readabilityFilter === '小さい文字' ? 'is-active' : ''}`}
+                        onClick={() => setReadabilityFilter(readabilityFilter === '小さい文字' ? null : '小さい文字')}
+                      >
+                        小さい文字: {countByKeyword('小さい文字')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`readability-chip ${readabilityFilter === '行間' ? 'is-active' : ''}`}
+                        onClick={() => setReadabilityFilter(readabilityFilter === '行間' ? null : '行間')}
+                      >
+                        行間: {countByKeyword('行間')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`readability-chip ${readabilityFilter === 'コントラスト' ? 'is-active' : ''}`}
+                        onClick={() => setReadabilityFilter(readabilityFilter === 'コントラスト' ? null : 'コントラスト')}
+                      >
+                        コントラスト: {countByKeyword('コントラスト')}
+                      </button>
+                    </div>
+                    <div className="readability-report__list">
+                      {currentReadability ? (
+                        filteredFlags.length ? (
+                          <div className="readability-report__item">
+                            <div className="readability-report__item-header">
+                              <div className="readability-report__item-page">ページ {currentReadability.page}</div>
+                              <div className="readability-report__item-flags">
+                                {visibleFlags.map((flag, idx) => (
+                                  <span className="readability-tag" key={`${currentReadability.page}-${idx}`}>{flag}</span>
+                                ))}
+                                {!readabilityExpanded && filteredFlags.length > visibleFlags.length ? (
+                                  <button
+                                    type="button"
+                                    className="readability-toggle"
+                                    onClick={() => setReadabilityExpanded(true)}
+                                  >
+                                    残り {filteredFlags.length - visibleFlags.length} 件を表示
+                                  </button>
+                                ) : null}
+                                {readabilityExpanded && filteredFlags.length > 5 ? (
+                                  <button
+                                    type="button"
+                                    className="readability-toggle"
+                                    onClick={() => setReadabilityExpanded(false)}
+                                  >
+                                    折りたたむ
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
+                            {currentReadability.contrastDetails && (!readabilityFilter || readabilityFilter === 'コントラスト') ? (
+                              <details className="readability-contrast-details">
+                                <summary>コントラストの詳細 ({currentReadability.contrastDetails.length} 件)</summary>
+                                <ul>
+                                  {currentReadability.contrastDetails.map((detail, idx) => (
+                                    <li key={`${currentReadability.page}-contrast-${idx}`}>{detail}</li>
+                                  ))}
+                                </ul>
+                              </details>
+                            ) : null}
+                            {currentReadability.fontSizeDetails && currentReadability.fontSizeDetails.length > 0 && (!readabilityFilter || readabilityFilter === '小さい文字') ? (
+                              <details className="readability-contrast-details">
+                                <summary>小さい文字の詳細 ({currentReadability.fontSizeDetails.length} 件)</summary>
+                                <ul>
+                                  {currentReadability.fontSizeDetails.map((detail, idx) => (
+                                    <li key={`${currentReadability.page}-font-${idx}`}>{detail}</li>
+                                  ))}
+                                </ul>
+                              </details>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="readability-report__item">
+                            <div className="readability-report__item-page">ページ {currentPage}</div>
+                            <div className="readability-report__item-flags">
+                              <span className="readability-tag">このページは表示する問題がありません</span>
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        <div className="readability-report__item">
+                          <div className="readability-report__item-page">ページ {currentPage}</div>
+                          <div className="readability-report__item-flags">
+                            <span className="readability-tag">このページは問題なし</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+                  </>
+                ) : (
+                  <p className="readability-report__placeholder" style={{color: 'rgba(0,0,0,0.5)', marginTop: '10px'}}>
+                    PDFを読み込むとここに結果が表示されます。
+                  </p>
+                )}
+              </div>
+              <div className="readability-side-panel__footer">
+                <button
+                  type="button"
+                  onClick={() => setIsGuideVisible(true)}
+                  className="readability-guide-trigger"
+                >
+                  判定基準を表示
+                </button>
+              </div>
+            </aside>
         </div>
       </main>
 
@@ -599,131 +661,30 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
         </div>
       </section>
 
-      {/* Readability Report Overlay */}
-      {readabilityReport ? (
-        <section className="readability-report" aria-live="polite" aria-label="読みやすさチェック結果">
-          <div className="readability-report__icon" aria-hidden="true">!</div>
-          <div className="readability-report__body">
-            <h3>読みやすさチェック結果</h3>
-            <p>{readabilityReport}</p>
-            {readabilityDetails.length ? (
-              <>
-                <div className="readability-report__summary">
-                  <button
-                    type="button"
-                    className={`readability-chip ${readabilityFilter === '情報量が多い' ? 'is-active' : ''}`}
-                    onClick={() => setReadabilityFilter(readabilityFilter === '情報量が多い' ? null : '情報量が多い')}
-                  >
-                    情報量多い: {countByKeyword('情報量が多い')}
-                  </button>
-                  <button
-                    type="button"
-                    className={`readability-chip ${readabilityFilter === '小さい文字' ? 'is-active' : ''}`}
-                    onClick={() => setReadabilityFilter(readabilityFilter === '小さい文字' ? null : '小さい文字')}
-                  >
-                    小さい文字: {countByKeyword('小さい文字')}
-                  </button>
-                  <button
-                    type="button"
-                    className={`readability-chip ${readabilityFilter === '行間' ? 'is-active' : ''}`}
-                    onClick={() => setReadabilityFilter(readabilityFilter === '行間' ? null : '行間')}
-                  >
-                    行間: {countByKeyword('行間')}
-                  </button>
-                  <button
-                    type="button"
-                    className={`readability-chip ${readabilityFilter === 'コントラスト' ? 'is-active' : ''}`}
-                    onClick={() => setReadabilityFilter(readabilityFilter === 'コントラスト' ? null : 'コントラスト')}
-                  >
-                    コントラスト: {countByKeyword('コントラスト')}
-                  </button>
-                </div>
-                <div className="readability-report__list">
-                  {currentReadability ? (
-                    filteredFlags.length ? (
-                      <div className="readability-report__item">
-                        <div className="readability-report__item-header">
-                          <div className="readability-report__item-page">ページ {currentReadability.page}</div>
-                          <div className="readability-report__item-flags">
-                            {visibleFlags.map((flag, idx) => (
-                              <span className="readability-tag" key={`${currentReadability.page}-${idx}`}>{flag}</span>
-                            ))}
-                            {!readabilityExpanded && filteredFlags.length > visibleFlags.length ? (
-                              <button
-                                type="button"
-                                className="readability-toggle"
-                                onClick={() => setReadabilityExpanded(true)}
-                              >
-                                残り {filteredFlags.length - visibleFlags.length} 件を表示
-                              </button>
-                            ) : null}
-                            {readabilityExpanded && filteredFlags.length > 5 ? (
-                              <button
-                                type="button"
-                                className="readability-toggle"
-                                onClick={() => setReadabilityExpanded(false)}
-                              >
-                                折りたたむ
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                        {currentReadability.contrastDetails && (!readabilityFilter || readabilityFilter === 'コントラスト') ? (
-                          <details className="readability-contrast-details">
-                            <summary>コントラストの詳細 ({currentReadability.contrastDetails.length} 件)</summary>
-                            <ul>
-                              {currentReadability.contrastDetails.map((detail, idx) => (
-                                <li key={`${currentReadability.page}-contrast-${idx}`}>{detail}</li>
-                              ))}
-                            </ul>
-                          </details>
-                        ) : null}
-                        {currentReadability.fontSizeDetails && currentReadability.fontSizeDetails.length > 0 && (!readabilityFilter || readabilityFilter === '小さい文字') ? (
-                          <details className="readability-contrast-details">
-                            <summary>小さい文字の詳細 ({currentReadability.fontSizeDetails.length} 件)</summary>
-                            <ul>
-                              {currentReadability.fontSizeDetails.map((detail, idx) => (
-                                <li key={`${currentReadability.page}-font-${idx}`}>{detail}</li>
-                              ))}
-                            </ul>
-                          </details>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div className="readability-report__item">
-                        <div className="readability-report__item-page">ページ {currentPage}</div>
-                        <div className="readability-report__item-flags">
-                          <span className="readability-tag">このページは表示する問題がありません</span>
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <div className="readability-report__item">
-                      <div className="readability-report__item-page">ページ {currentPage}</div>
-                      <div className="readability-report__item-flags">
-                        <span className="readability-tag">このページは問題なし</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-      
-      <section className="readability-guide" aria-label="読みやすさ判定の基準">
-        <h3>読みづらさ判定の基準</h3>
-        <ul>
-          <li><strong>文字が小さすぎる:</strong> 18pt未満はデスクトップでも読みにくく、プロジェクター投影時にはさらに視認性が低下するため、注意喚起します。</li>
-          <li><strong>文字が大きすぎる:</strong> 72pt超の特大文字はバランスを崩しがちで、画面を圧迫するため指摘します。</li>
-          <li><strong>行間が狭い:</strong> 行と行の間隔がほとんどないページでは詰まって見えるため、行間不足を指摘します。</li>
-          <li><strong>情報量が多すぎる:</strong> 1ページ内に文章が詰め込み過ぎている場合（文字数が多い）、読みやすさ低下のサインとしてお知らせします。</li>
-          <li><strong>コントラスト不足:</strong> 文字と背景の明るさの差が小さい（WCAGの推奨値を下回る）箇所を見つけて報告します。</li>
-        </ul>
-        <p>目安となる適切な文字サイズ: 本文は 14〜18px 程度、見出しは 20〜32px 程度にすると、一般的なディスプレイやプロジェクターでも読みやすくなります。</p>
-        <p>※ 実際の修正は行いません。指摘を参考に元の資料を編集してください。</p>
-      </section>
+      {isGuideVisible && (
+        <div className="guide-modal-overlay">
+          <section className="readability-guide guide-modal" aria-label="読みやすさ判定の基準">
+            <button
+              type="button"
+              className="guide-close-button"
+              onClick={() => setIsGuideVisible(false)}
+              aria-label="閉じる"
+            >
+              ×
+            </button>
+            <h3>読みづらさ判定の基準</h3>
+            <ul>
+              <li><strong>文字が小さすぎる:</strong> 18pt未満はデスクトップでも読みにくく、プロジェクター投影時にはさらに視認性が低下するため、注意喚起します。</li>
+              <li><strong>文字が大きすぎる:</strong> 72pt超の特大文字はバランスを崩しがちで、画面を圧迫するため指摘します。</li>
+              <li><strong>行間が狭い:</strong> 行と行の間隔がほとんどないページでは詰まって見えるため、行間不足を指摘します。</li>
+              <li><strong>情報量が多すぎる:</strong> 1ページ内に文章が詰め込み過ぎている場合（文字数が多い）、読みやすさ低下のサインとしてお知らせします。</li>
+              <li><strong>コントラスト不足:</strong> 文字と背景の明るさの差が小さい（WCAGの推奨値を下回る）箇所を見つけて報告します。</li>
+            </ul>
+            <p>目安となる適切な文字サイズ: 本文は 14〜18px 程度、見出しは 20〜32px 程度にすると、一般的なディスプレイやプロジェクターでも読みやすくなります。</p>
+            <p>※ 実際の修正は行いません。指摘を参考に元の資料を編集してください。</p>
+          </section>
+        </div>
+      )}
 
     </div>
   );

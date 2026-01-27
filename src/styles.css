@@ -3,18 +3,18 @@
 :root {
   color-scheme: light;
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #f4f6fc;
+  background-color: #ffffff;
   color: #1f2430;
   line-height: 1.6;
-  --vs-bg: #eef2fb;
-  --vs-surface: rgba(255, 255, 255, 0.95);
-  --vs-surface-alt: rgba(247, 249, 255, 0.92);
-  --vs-border: rgba(82, 99, 149, 0.14);
-  --vs-border-strong: rgba(82, 99, 149, 0.3);
-  --vs-radius-lg: 26px;
-  --vs-radius-md: 18px;
-  --vs-radius-sm: 12px;
-  --vs-shadow: 0 25px 55px rgba(22, 33, 77, 0.16);
+  --vs-bg: #f8f9fa;
+  --vs-surface: #ffffff;
+  --vs-surface-alt: #f1f3f5;
+  --vs-border: #dee2e6;
+  --vs-border-strong: #ced4da;
+  --vs-radius-lg: 0px;
+  --vs-radius-md: 0px;
+  --vs-radius-sm: 0px;
+  --vs-shadow: none;
   --vs-primary: #4f6aff;
   --vs-primary-strong: #3446d4;
   --vs-text-muted: rgba(31, 35, 56, 0.7);
@@ -28,6 +28,7 @@ html {
 *::before,
 *::after {
   box-sizing: border-box;
+  border-radius: 0 !important;
 }
 
 body {
@@ -35,10 +36,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(180% 120% at 10% 0%, rgba(104, 136, 255, 0.18) 0%, transparent 55%),
-    radial-gradient(150% 160% at 80% 0%, rgba(148, 99, 255, 0.12) 0%, transparent 60%),
-    linear-gradient(180deg, #f7f8fd 0%, #edf1fb 100%);
+  background: #ffffff;
 }
 
 #root {
@@ -47,47 +45,51 @@ body {
 }
 
 .hero-app {
-  flex: 1;
+  height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 3vw, 36px);
-  padding: clamp(12px, 2vw, 28px) clamp(12px, 3vw, 32px) clamp(20px, 3vw, 52px);
-  align-items: stretch;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  gap: 0;
 }
 
 .landing__header--app {
   width: 100%;
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 16px clamp(16px, 3vw, 26px);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(7, 9, 24, 0.9), rgba(18, 24, 45, 0.85));
+  max-width: none;
+  margin: 0;
+  padding: 16px 24px;
+  border-radius: 0;
+  background: #12182d; /* Solid dark color */
   border: none;
   position: relative;
   z-index: 2;
 }
 
 .hero-stage {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  margin-top: clamp(20px, 3vw, 60px);
+  justify-content: center;
+  gap: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 10px;
 }
 
 .hero-stage__panel {
-  width: min(1080px, 100%);
-  max-width: 1080px;
-  min-height: clamp(380px, 46vw, 640px);
-  border-radius: 50px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(160, 178, 228, 0.35);
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  border-radius: 0;
+  background: #ffffff;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(26px, 4vw, 52px);
+  padding: 0;
   position: relative;
 }
 
@@ -296,10 +298,8 @@ body {
 
 .wcag-preview__content {
   position: relative;
-  border-radius: 12px;
-  background:
-    linear-gradient(140deg, rgba(14, 20, 36, 0.85), rgba(22, 32, 58, 0.92)),
-    radial-gradient(70% 90% at 20% 10%, rgba(96, 135, 255, 0.22), transparent);
+  border-radius: 0;
+  background: #f0f2f5;
   overflow: hidden;
   padding: 16px;
   min-height: 160px;
@@ -804,26 +804,6 @@ a {
   }
 }
 
-@media (max-width: 720px) {
-  .studio-command-bar {
-    flex-direction: column;
-    border-radius: 24px;
-    align-items: stretch;
-  }
-
-  .studio-command-bar__slider {
-    width: 100%;
-  }
-
-  .studio-command-bar__divider {
-    display: none;
-  }
-
-  .studio-command-bar__jump {
-    padding-left: 0;
-  }
-}
-
 .image-gallery {
   margin-top: 28px;
   padding: 18px 16px;
@@ -849,10 +829,10 @@ a {
 .image-gallery__item {
   margin: 0;
   padding: 10px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #f7f9ff, #eef2fb);
+  border-radius: 0;
+  background: #f7f9ff;
   border: 1px solid rgba(150, 170, 220, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1085,20 +1065,18 @@ a {
 
 .drop-zone--hero {
   padding: clamp(40px, 5vw, 60px);
-  border-radius: 38px;
+  border-radius: 0;
   border: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 255, 0.85));
-  box-shadow:
-    0 22px 45px rgba(26, 38, 92, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: #f8f9fa;
+  box-shadow: none;
+  border: 1px dashed #ccc;
 }
 
 .drop-zone--hero:hover,
 .drop-zone--hero.is-active {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(226, 234, 255, 0.95));
-  box-shadow:
-    0 26px 55px rgba(37, 53, 120, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: #ffffff;
+  box-shadow: none;
+  border-color: #4f6aff;
 }
 
 .drop-zone--hero .drop-zone__icon {
@@ -1651,18 +1629,19 @@ a {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  padding: 20px 24px;
-  border-radius: 32px;
+  padding: 16px 24px;
+  border-radius: 0;
   background: #f4f6ff;
-  border: 1px solid rgba(136, 152, 210, 0.4);
+  border: none;
+  border-top: 1px solid rgba(136, 152, 210, 0.4);
 }
 
 .studio-command-bar--hero {
-  width: min(980px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   background: #eef0ff;
-  border-color: rgba(122, 136, 198, 0.4);
-  box-shadow: 0 18px 45px rgba(20, 25, 52, 0.12);
+  box-shadow: none;
 }
 
 .studio-command-bar__slider {
@@ -1684,9 +1663,9 @@ a {
 }
 
 .studio-command-bar__button--active {
-  background: linear-gradient(180deg, #e8efff, #d8e4ff);
+  background: #e8efff;
   border-color: rgba(98, 126, 210, 0.8);
-  box-shadow: 0 10px 24px rgba(54, 72, 160, 0.25);
+  box-shadow: none;
 }
 
 .studio-command-bar__icon {
@@ -2185,27 +2164,6 @@ a {
 
   .viewport__nav--next {
     right: 20px;
-  }
-}
-
-@media (max-width: 720px) {
-  .app-shell {
-    padding: 24px 16px 32px;
-  }
-
-  .control-panel {
-    padding: 24px 20px;
-  }
-
-  .uploader,
-  .controls {
-    padding: 18px 16px;
-  }
-
-  .viewport__nav {
-    width: 48px;
-    height: 48px;
-    font-size: 1.6rem;
   }
 }
 
@@ -2873,27 +2831,6 @@ a {
 
   .viewport__nav--next {
     right: 20px;
-  }
-}
-
-@media (max-width: 720px) {
-  .app-shell {
-    padding: 24px 16px 32px;
-  }
-
-  .control-panel {
-    padding: 24px 20px;
-  }
-
-  .uploader,
-  .controls {
-    padding: 18px 16px;
-  }
-
-  .viewport__nav {
-    width: 48px;
-    height: 48px;
-    font-size: 1.6rem;
   }
 }
 
@@ -4384,4 +4321,1579 @@ a {
 .project-dashboard__project-list.project-dashboard__project-list--open {
   padding: 4px 0 6px;
   max-height: 300px;
+}
+
+/* Guide Modal Styles */
+.guide-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.guide-modal {
+  background: #ffffff;
+  padding: 32px;
+  width: min(90vw, 600px);
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid var(--vs-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  position: relative;
+  /* Resetting margin since it was used in normal flow */
+  margin: 0 !important;
+}
+
+.guide-close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #333;
+  padding: 4px 8px;
+}
+
+.guide-close-button:hover {
+  background: #f0f0f0;
+}
+
+/* Responsive Warning */
+.screen-warning {
+  display: none;
+}
+
+@media (max-width: 1024px), (max-height: 600px) {
+  .screen-warning {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #ffffff;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1f2430;
+    text-align: center;
+    padding: 24px;
+  }
+}
+
+/* Side Panel Layout Adjustments */
+.hero-stage__panel {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.hero-viewport {
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.readability-side-panel {
+  flex: 0 0 320px;
+  border-left: 1px solid var(--vs-border);
+  background: #f9fafb;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.readability-report__body {
+  width: 100%;
+}
+
+.readability-report__summary {
+  margin-bottom: 16px;
+}
+
+/* PDF Auto-sizing (Override viewport styles) */
+.viewport {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  padding-bottom: 0 !important;
+  position: relative !important;
+}
+
+.viewport::before {
+  display: none !important;
+}
+
+.viewport__content {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.viewport__canvas {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Ensure canvas doesn't overflow */
+canvas.viewport__canvas {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Override Screen Warning */
+.screen-warning {
+  display: none !important;
+}
+
+/* Header/Footer Padding and Style */
+.landing__header--app {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--vs-border);
+}
+
+/* Since header is white, we need dark text for the logo/brand if it was white */
+.landing__brand-text {
+  color: #1f2430 !important;
+}
+/* If logo is white image, it might be invisible. I should check logo. */
+/* Assuming logoWhite is used. I might need a filter or different logo. */
+/* Using filter invert to make white logo black */
+.landing__logo {
+  filter: invert(1) !important;
+}
+
+.studio-command-bar {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+  .hero-stage__panel {
+    flex-direction: column !important;
+  }
+  
+  .readability-side-panel {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 40vh !important;
+    border-left: none !important;
+    border-top: 1px solid var(--vs-border);
+  }
+  
+  .hero-viewport {
+    flex: 1 !important;
+    height: auto !important;
+  }
+}
+
+/* --- UI Update: Transparent Bottom Bar --- */
+.studio-command-bar, 
+.studio-command-bar--hero {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Ensure buttons remain visible and clickable with proper contrast */
+.studio-command-bar__button {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* --- UI Update: Readability Report Panel Scrollbar --- */
+.readability-side-panel {
+  /* Ensure overflow handling */
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* Webkit Scrollbar Styling */
+.readability-side-panel::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.readability-side-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.readability-side-panel::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.readability-side-panel::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* --- UI Update: Responsive Font Sizes --- */
+html {
+  /* Fluid typography: scales between 14px and 18px depending on viewport width */
+  font-size: clamp(14px, 1vw + 10px, 18px);
+}
+
+/* Ensure specific elements inherit or use rems to scale */
+.readability-report__body h3 {
+  font-size: 1.2rem !important;
+}
+.readability-report__body p, 
+.readability-report__item {
+  font-size: 0.95rem !important;
+}
+
+/* --- UI Update: Vertical Layout (Portrait/Mobile) --- */
+@media (max-width: 900px) {
+  /* Change the inner panel to column to stack PDF and Report */
+  .hero-stage__panel {
+    flex-direction: column !important;
+  }
+
+  /* PDF Viewer Area */
+  .hero-viewport {
+    flex: 1 1 auto !important; /* Take available space */
+    min-height: 0 !important;   /* Allow shrinking */
+    width: 100% !important;
+    border-bottom: 1px solid var(--vs-border);
+  }
+
+  /* Report Panel Area */
+  .readability-side-panel {
+    flex: 0 0 35vh !important; /* Fixed height ratio for "Fixed Size" feel */
+    width: 100% !important;
+    max-width: none !important;
+    border-left: none !important;
+    border-top: 1px solid var(--vs-border);
+    padding: 16px;
+  }
+}
+
+/* Ensure Bottom Bar is always at the bottom (Pinned) */
+/* This is naturally handled by the Flexbox structure:
+   Header (Top) -> Main (Flex:1) -> Footer (Bottom) 
+   But we ensure z-index just in case. */
+.studio-command-bar {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* --- UI Update: Centering and Sidebar Adjustments --- */
+
+/* Always show scrollbar for readability-side-panel */
+.readability-side-panel {
+  overflow-y: scroll !important; /* Force scrollbar display */
+  flex: 0 0 400px !important; /* Increase width from 320px to 400px */
+  padding-right: 8px !important; /* Reduce right padding */
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.readability-report__body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+
+/* Vertical centering for PDF viewer */
+.hero-viewport {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Sidebar footer for Criteria button */
+.readability-side-panel__footer {
+  padding: 16px 0;
+  border-top: 1px solid var(--vs-border);
+  display: flex;
+  justify-content: center;
+  background: inherit;
+}
+
+.readability-guide-trigger {
+  padding: 8px 20px;
+  background: #4f6aff;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.readability-guide-trigger:hover {
+  background: #3446d4;
+}
+
+/* Adjust scrollbar visibility (WebKit) */
+.readability-side-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.readability-side-panel::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); /* Ensure visible color */
+  border-radius: 0; /* Keep it simple/sharp */
+}
+
+/* Mobile adjustments */
+@media (max-width: 900px) {
+  .readability-side-panel {
+    flex: 0 0 40vh !important;
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--vs-border);
+  }
+}
+
+/* --- UI Update: Unified Color Scheme & Layout --- */
+
+:root {
+  /* Unified Palette */
+  --vs-primary: #4f6aff;
+  --vs-primary-hover: #3b52cc;
+  --vs-text: #1f2430;
+  --vs-text-muted: #64748b;
+  --vs-bg: #ffffff;
+  --vs-bg-alt: #f8f9fa;
+  --vs-border: #e2e8f0;
+}
+
+/* --- Layout: 70% PDF / 30% Report (Desktop) --- */
+@media (min-width: 901px) {
+  .hero-stage__panel {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .hero-viewport {
+    flex: 7 !important; /* 70% */
+    width: 70% !important;
+    max-width: 70% !important;
+    border-right: 1px solid var(--vs-border) !important;
+    background: var(--vs-bg-alt) !important; /* Slight contrast for PDF area */
+    padding: 20px !important;
+  }
+
+  .readability-side-panel {
+    flex: 3 !important; /* 30% */
+    width: 30% !important;
+    max-width: 30% !important;
+    min-width: 300px !important;
+    background: var(--vs-bg) !important;
+    border-left: none !important;
+    padding: 20px !important;
+  }
+}
+
+/* --- PDF Auto-Sizing & Positioning --- */
+.viewport {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.viewport__content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Add subtle shadow to PDF for pop */
+}
+
+/* --- Control Bar Styling (Desktop & General) --- */
+.studio-command-bar {
+  background: var(--vs-bg) !important;
+  border-top: 1px solid var(--vs-border) !important;
+  padding: 12px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  flex-wrap: nowrap !important;
+}
+
+.studio-command-bar__button {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 4px !important; /* Slight rounding for buttons is better for UX, or 0 if strict */
+  border: 1px solid var(--vs-border) !important;
+  background: #fff !important;
+  color: var(--vs-text) !important;
+  transition: all 0.2s ease !important;
+}
+
+.studio-command-bar__button:hover {
+  background: var(--vs-bg-alt) !important;
+  border-color: var(--vs-primary) !important;
+  color: var(--vs-primary) !important;
+}
+
+.studio-command-bar__button--active {
+  background: var(--vs-primary) !important;
+  color: #fff !important;
+  border-color: var(--vs-primary) !important;
+}
+
+/* --- Responsive Design (Mobile/Tablet) --- */
+@media (max-width: 900px) {
+  /* Allow page scrolling */
+  .hero-app {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .hero-stage {
+    overflow: visible !important;
+    height: auto !important;
+    flex: none !important;
+    display: block !important;
+  }
+
+  .hero-stage__panel {
+    flex-direction: column !important;
+    height: auto !important;
+  }
+
+  /* PDF Viewer Area */
+  .hero-viewport {
+    width: 100% !important;
+    max-width: none !important;
+    height: 50vh !important; /* Fixed height for viewer */
+    flex: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+  }
+
+  /* Report Panel Area */
+  .readability-side-panel {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 300px !important;
+  }
+
+  /* Control Bar: 2 Rows */
+  .studio-command-bar {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 100 !important;
+    flex-wrap: wrap !important;
+    height: auto !important;
+    padding: 12px 16px !important;
+    background: rgba(255, 255, 255, 0.95) !important; /* Translucent background */
+    backdrop-filter: blur(8px);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05) !important;
+  }
+
+  /* Force breaks or sizing to create 2 rows effectively */
+  .studio-command-bar > * {
+    flex: 1 1 auto !important; /* Grow to fill space */
+    display: flex !important;
+    justify-content: center !important;
+  }
+  
+  .studio-command-bar__slider {
+    flex: 1 1 100% !important; /* Slider takes full row if needed, or adjust */
+    order: -1; /* Move slider to top row? Or keep order */
+    min-width: 200px !important;
+  }
+  
+  .studio-command-bar__divider {
+    display: none !important; /* Hide dividers on mobile */
+  }
+}
+
+/* --- UI Update: 60/40 Split, Centering, and Sticky Footer --- */
+
+:root {
+  --vs-padding-lg: 40px;
+  --vs-padding-md: 24px;
+}
+
+/* Ensure the app always fills the screen and doesn't scroll globally */
+.hero-app {
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: var(--vs-bg) !important;
+}
+
+/* Main content area scrolls internally if needed */
+.hero-stage {
+  flex: 1 !important;
+  overflow-y: auto !important; /* Allow vertical scroll for content */
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* The panel that holds PDF and Report */
+.hero-stage__panel {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  min-height: 0 !important; /* Critical for flex scrolling */
+  align-items: stretch !important;
+}
+
+/* --- Layout: 60% PDF / 40% Report (Desktop) --- */
+@media (min-width: 901px) {
+  .hero-viewport {
+    flex: 6 !important; /* 60% */
+    width: 60% !important;
+    max-width: 60% !important;
+    display: flex !important;
+    align-items: center !important; /* Vertical center */
+    justify-content: center !important; /* Horizontal center */
+    background: var(--vs-bg-alt) !important;
+    padding: var(--vs-padding-lg) !important; /* Large whitespace */
+    border-right: 1px solid var(--vs-border) !important;
+  }
+
+  .readability-side-panel {
+    flex: 4 !important; /* 40% */
+    width: 40% !important;
+    max-width: 40% !important;
+    padding: var(--vs-padding-lg) !important; /* Large whitespace */
+    background: var(--vs-bg) !important;
+    overflow-y: scroll !important; /* Always show scrollbar */
+  }
+}
+
+/* --- Fixed Bottom Bar (Sticky in all viewports) --- */
+.studio-command-bar {
+  flex-shrink: 0 !important;
+  background: var(--vs-bg) !important;
+  border-top: 1px solid var(--vs-border) !important;
+  z-index: 100 !important;
+  padding: 16px var(--vs-padding-md) !important;
+}
+
+/* --- PDF Positioning & Auto-Sizing --- */
+.viewport {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important; /* Vertical center PDF in its container */
+  justify-content: center !important;
+}
+
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  /* Add subtle shadow and border for a clean paper look */
+  border: 1px solid rgba(0,0,0,0.05) !important;
+  background: #fff !important;
+}
+
+/* --- Responsive Design (Mobile/Tablet) --- */
+@media (max-width: 900px) {
+  .hero-stage__panel {
+    flex-direction: column !important;
+    height: auto !important;
+  }
+
+  .hero-viewport {
+    width: 100% !important;
+    max-width: none !important;
+    height: 60vh !important; /* Fixed viewport height on mobile */
+    flex: none !important;
+    padding: var(--vs-padding-md) !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .readability-side-panel {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 400px !important;
+    padding: var(--vs-padding-md) !important;
+    border-left: none !important;
+  }
+
+  .studio-command-bar {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  
+  .studio-command-bar__slider {
+    flex: 1 1 100% !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+/* --- Content Whitespace Refinement --- */
+.readability-report__body h3 {
+  margin-bottom: 24px !important;
+}
+
+.readability-report__item {
+  margin-bottom: 16px !important;
+  padding: 16px !important;
+  border: 1px solid var(--vs-border) !important;
+  background: #fff !important;
+}
+
+/* --- UI Update: Equal Heights and Background Removal --- */
+
+/* Remove backgrounds from main containers */
+.hero-viewport,
+.readability-side-panel,
+.hero-stage__panel,
+.hero-stage {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure the parent container is correctly constrained to fill the space */
+.hero-stage__panel {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important; /* Forces children to have equal height */
+  min-height: 0 !important;
+  border-bottom: 1px solid var(--vs-border) !important;
+}
+
+/* Ensure children fill the height of the parent */
+.hero-viewport {
+  height: 100% !important;
+  border-right: 1px solid var(--vs-border) !important;
+  box-sizing: border-box !important;
+}
+
+.readability-side-panel {
+  height: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Maintain independent scrolling for the report body only */
+.readability-report__body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding-right: 10px !important;
+}
+
+/* Mobile adjustments to keep equal width but stacked if needed, 
+   though the prompt asks for vertical size alignment which usually applies to horizontal layouts.
+   In vertical layout, they will stack but take their assigned heights. */
+@media (max-width: 900px) {
+  .hero-stage__panel {
+    flex-direction: column !important;
+  }
+  .hero-viewport {
+    height: 50% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+  }
+  .readability-side-panel {
+    height: 50% !important;
+  }
+}
+
+/* --- Strict Grid Layout (Robustness Update) --- */
+
+/* 1. Global Box Sizing Reset (Critical for strict sizing) */
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+
+/* 2. Main App Shell: 3-Row Grid (Header / Content / Footer) */
+.hero-app {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important; /* Header, Content(expand), Footer */
+  height: 100vh !important;
+  height: 100dvh !important; /* Mobile viewport fix */
+  width: 100vw !important;
+  overflow: hidden !important;
+  background: #ffffff !important; /* Base canvas color */
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Row 1: Header */
+.landing__header--app {
+  grid-row: 1 !important;
+  width: 100% !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+/* Row 2: Main Stage Wrapper */
+.hero-stage {
+  grid-row: 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* The Panel: 60/40 Split Grid */
+.hero-stage__panel {
+  display: grid !important;
+  grid-template-columns: 60% 40% !important; /* Strict 60/40 split */
+  grid-template-rows: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-bottom: none !important;
+  align-items: stretch !important;
+  background: transparent !important;
+}
+
+/* Column 1: PDF Viewport */
+.hero-viewport {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  border-right: 1px solid var(--vs-border) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 32px !important; /* Consistent padding */
+  background: transparent !important;
+}
+
+/* Column 2: Report Panel */
+.readability-side-panel {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important; /* Internal scrolling handles content */
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 32px !important; /* Matches viewport padding */
+  background: transparent !important;
+  border-left: none !important;
+}
+
+/* Scrollable area inside Report Panel */
+.readability-report__body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding-right: 12px !important; /* Space for scrollbar */
+}
+
+/* Row 3: Command Bar (Footer) */
+.studio-command-bar {
+  grid-row: 3 !important;
+  width: 100% !important;
+  z-index: 20 !important;
+  border-top: 1px solid var(--vs-border) !important;
+  background: rgba(255, 255, 255, 0.95) !important; /* Ensure opacity over content */
+  padding: 12px 24px !important;
+}
+
+/* PDF Sizing Fix */
+.viewport {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important; /* Slight shadow for separation */
+}
+
+/* --- Mobile / Vertical Layout (Breakpoint < 900px) --- */
+@media (max-width: 900px) {
+  /* Change the inner panel to Vertical Grid */
+  .hero-stage__panel {
+    grid-template-columns: 100% !important;
+    grid-template-rows: 50% 50% !important; /* Strict 50/50 vertical split */
+  }
+
+  .hero-viewport {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+    padding: 16px !important;
+  }
+
+  .readability-side-panel {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    padding: 16px !important;
+  }
+}
+
+/* --- Layout Fix: Robust Grid & Spacing --- */
+
+/* 1. Panel Grid Definition (Use fr for flexibility) */
+.hero-stage__panel {
+  display: grid !important;
+  /* 60% : 40% ratio = 3 : 2 = 1.5fr : 1fr */
+  grid-template-columns: 1.5fr 1fr !important;
+  grid-template-rows: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  gap: 0 !important; /* Clean split */
+  background: transparent !important;
+}
+
+/* 2. Column 1: Main Content (PDF or Uploader) */
+.hero-viewport {
+  grid-column: 1 / 2 !important;
+  grid-row: 1 / 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-right: 1px solid var(--vs-border) !important;
+  /* Reset flex properties that might interfere */
+  flex: none !important; 
+  min-width: 0 !important;
+  /* Center content */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 40px !important;
+  background: #f8f9fa !important; /* Light background for contrast against white paper */
+}
+
+/* Uploader should also occupy Column 1 when visible */
+.hero-uploader {
+  grid-column: 1 / 2 !important;
+  grid-row: 1 / 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 40px !important;
+  z-index: 5 !important;
+}
+
+/* If viewport is hidden, ensure it doesn't break layout */
+.hero-viewport--hidden {
+  display: none !important; /* Completely remove from flow */
+}
+
+/* 3. Column 2: Side Panel */
+.readability-side-panel {
+  grid-column: 2 / 3 !important;
+  grid-row: 1 / 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-left: none !important;
+  /* Reset flex properties */
+  flex: none !important;
+  min-width: 0 !important;
+  background: #ffffff !important;
+  padding: 32px !important;
+  overflow: hidden !important; /* Inner scrolling */
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 4. Mobile Layout (< 900px) */
+@media (max-width: 900px) {
+  .hero-stage__panel {
+    grid-template-columns: 100% !important;
+    grid-template-rows: minmax(300px, 50%) 1fr !important; /* Stacked: PDF (min 300px) / Report */
+  }
+
+  .hero-viewport, .hero-uploader {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 / 2 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+    padding: 20px !important;
+  }
+
+  .readability-side-panel {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 / 3 !important;
+    padding: 20px !important;
+  }
+}
+
+/* 5. PDF Visual Tweaks */
+.viewport__canvas {
+  /* Ensure PDF feels like a "sheet" */
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+/* --- Final Strict Layout Correction --- */
+
+/* 1. Reset and ensure no overflow on main container */
+.hero-app {
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.hero-stage {
+  flex: 1 !important;
+  display: flex !important;
+  overflow: hidden !important;
+}
+
+/* 2. Strict 60% / 30% Split with 10% Gap/Margin */
+.hero-stage__panel {
+  display: grid !important;
+  grid-template-columns: 60% 30% !important; /* Explicitly 60% and 30% */
+  column-gap: 5% !important; /* 5% gap in between */
+  padding-left: 2.5% !important; /* 2.5% on left */
+  padding-right: 2.5% !important; /* 2.5% on right */
+  /* Total width: 60 + 30 + 5 + 2.5 + 2.5 = 100% */
+  width: 100% !important;
+  height: 100% !important;
+  align-items: stretch !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. PDF Area (60%) */
+.hero-viewport {
+  grid-column: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important; /* Vertical center */
+  justify-content: center !important; /* Horizontal center */
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+/* Vertical centering for the canvas content */
+.viewport__content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important; /* Strict vertical centering */
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 4. Readability Area (30%) */
+.readability-side-panel {
+  grid-column: 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border: 1px solid var(--vs-border) !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* Internal scroll for report only */
+.readability-report__body {
+  flex: 1 !important;
+  overflow-y: scroll !important; /* Always show scrollbar as requested */
+  padding-right: 8px !important;
+}
+
+/* Footer buttons area */
+.readability-side-panel__footer {
+  flex-shrink: 0 !important;
+  padding-top: 16px !important;
+}
+
+/* 5. Mobile Adjustments */
+@media (max-width: 900px) {
+  .hero-stage__panel {
+    grid-template-columns: 100% !important;
+    grid-template-rows: 55% 45% !important;
+    column-gap: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .hero-viewport {
+    grid-row: 1 !important;
+    padding: 16px !important;
+  }
+  
+  .readability-side-panel {
+    grid-row: 2 !important;
+    grid-column: 1 !important;
+    border-top: 1px solid var(--vs-border) !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+}
+
+/* --- Strict Layout Fix: Width and Grid Placement --- */
+
+/* 1. Ensure the panel is a strict 2-column grid */
+.hero-stage__panel {
+  display: grid !important;
+  /* 60% for PDF/Upload area, 30% for Report, 10% for spacing/margins */
+  grid-template-columns: 60% 30% !important; 
+  grid-template-rows: 100% !important;
+  column-gap: 4% !important;
+  padding: 0 3% !important;
+  width: 100% !important;
+  height: 100% !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* 2. Explicitly place Column 1 items (PDF Viewport and Uploader) */
+.hero-viewport, 
+.hero-uploader {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  overflow: hidden !important;
+}
+
+/* Ensure hidden viewport doesn't interfere with layout */
+.hero-viewport--hidden {
+  display: none !important;
+}
+
+/* 3. Explicitly place Column 2 item (Readability Side Panel) */
+.readability-side-panel {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important; /* Stay within grid cell */
+  display: flex !important;
+  flex-direction: column !important;
+  background: #ffffff !important;
+  border: 1px solid var(--vs-border) !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* 4. Canvas Centering (Internal) */
+.viewport__content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* 5. Mobile Override (Vertical Stack) */
+@media (max-width: 900px) {
+  .hero-stage__panel {
+    grid-template-columns: 100% !important;
+    grid-template-rows: 50% 50% !important;
+    column-gap: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .hero-viewport, .hero-uploader, .readability-side-panel {
+    grid-column: 1 !important;
+    width: 100% !important;
+  }
+  
+  .hero-viewport, .hero-uploader {
+    grid-row: 1 !important;
+  }
+  
+  .readability-side-panel {
+    grid-row: 2 !important;
+    border-left: none !important;
+    border-top: 1px solid var(--vs-border) !important;
+  }
+}
+
+/* --- Precise Viewport Widening & Centering --- */
+
+/* 1. Adjust Split Ratio: 70% for PDF, 25% for Report, 5% for gaps/margins */
+.hero-stage__panel {
+  display: grid !important;
+  grid-template-columns: 70% 25% !important; 
+  column-gap: 3% !important;
+  padding: 0 1% !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* 2. PDF Viewport Container - Ensure it fills height and centers content */
+.hero-viewport {
+  grid-column: 1 !important;
+  display: flex !important;
+  align-items: center !important; /* Strict vertical centering */
+  justify-content: center !important;
+  height: 100% !important;
+  width: 100% !important;
+  padding: 20px !important; /* Balanced whitespace */
+}
+
+/* 3. Viewport Inner - Disable the aspect-ratio padding hack */
+.viewport {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+}
+
+.viewport::before {
+  display: none !important; /* Remove the padding-bottom hack */
+}
+
+/* 4. Viewport Content - Container for Canvas and Nav Buttons */
+.viewport__content {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important; /* Center canvas vertically */
+  justify-content: center !important; /* Center canvas horizontally */
+}
+
+/* 5. Canvas Styling */
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important; /* Better shadow for the wider view */
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff !important;
+}
+
+/* 6. Navigation Buttons Centering */
+.viewport__nav {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10 !important;
+}
+
+.viewport__nav--prev {
+  left: 10px !important;
+}
+
+.viewport__nav--next {
+  right: 10px !important;
+}
+
+/* 7. Side Panel Refinement (25% width) */
+.readability-side-panel {
+  grid-column: 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 24px !important;
+}
+
+/* --- Strict 60/40 Split Correction --- */
+
+.hero-stage__panel {
+  display: grid !important;
+  /* Strictly 60% and 40% with NO gap to avoid whitespace issues */
+  grid-template-columns: 60% 40% !important;
+  grid-template-rows: 100% !important;
+  column-gap: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  align-items: stretch !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Column 1: PDF Viewport (60%) */
+.hero-viewport {
+  grid-column: 1 / 2 !important;
+  grid-row: 1 / 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  /* Ensure content is centered */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  /* Optional: visual separator */
+  border-right: 1px solid var(--vs-border) !important;
+  background: #f8f9fa !important; /* Keep slight contrast */
+  padding: 20px !important; /* Internal padding only */
+}
+
+/* Column 2: Readability Panel (40%) */
+.readability-side-panel {
+  grid-column: 2 / 3 !important;
+  grid-row: 1 / 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #ffffff !important;
+  border-left: none !important;
+  padding: 20px !important; /* Internal padding only */
+  overflow: hidden !important;
+}
+
+/* Mobile Fallback */
+@media (max-width: 900px) {
+  .hero-stage__panel {
+    grid-template-columns: 100% !important;
+    grid-template-rows: 50% 50% !important;
+  }
+  
+  .hero-viewport {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 / 2 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+  }
+  
+  .readability-side-panel {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 / 3 !important;
+  }
+}
+
+/* --- Fix Gap Issue Post-Load --- */
+
+/* 1. Enforce Grid on Parent */
+.hero-stage__panel {
+  display: grid !important;
+  grid-template-columns: 60% 40% !important; /* Strict split */
+  column-gap: 0 !important; /* Zero gap */
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  align-items: stretch !important;
+  justify-items: stretch !important; /* Force children to fill cells */
+}
+
+/* 2. Force Children to Fill Grid Cells */
+.hero-viewport {
+  grid-column: 1 / 2 !important;
+  width: 100% !important;
+  max-width: none !important; /* Disable max-width constraints */
+  min-width: 0 !important;    /* Allow shrinking if needed, but grow to fit */
+  margin: 0 !important;
+  border-right: 1px solid var(--vs-border) !important;
+  display: flex !important;
+  flex-direction: column !important; /* Ensure content stacks */
+  justify-content: center !important;
+}
+
+.readability-side-panel {
+  grid-column: 2 / 3 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  border-left: none !important;
+}
+
+/* 3. Ensure Inner Viewport Fills Container */
+.viewport {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 4. Ensure Canvas Doesn't Cause Overflow/Shrinkage */
+.viewport__content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.viewport__canvas {
+  /* Limit canvas size to viewport */
+  max-width: 95% !important;
+  max-height: 95% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* --- Responsive Design Fix: Unlock Scroll & Stack Layout --- */
+
+@media (max-width: 900px) {
+  /* 1. Unlock Main Container */
+  .hero-app {
+    height: auto !important; /* Remove 100vh limit */
+    min-height: 100vh !important;
+    overflow-y: auto !important; /* Enable page scroll */
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* 2. Content Wrapper */
+  .hero-stage {
+    flex: 1 0 auto !important; /* Grow to fill space */
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    padding-bottom: 80px !important; /* Prevent content hiding behind footer */
+  }
+
+  /* 3. Stack Panels Vertically */
+  .hero-stage__panel {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* 4. PDF Viewport (Top) */
+  .hero-viewport {
+    width: 100% !important;
+    height: 50vh !important; /* Give it half screen height */
+    min-height: 350px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--vs-border) !important;
+    padding: 10px !important;
+  }
+
+  /* 5. Readability Panel (Bottom) */
+  .readability-side-panel {
+    width: 100% !important;
+    height: auto !important; /* Let it expand with content */
+    min-height: 300px !important;
+    border-left: none !important;
+    border-top: none !important;
+    overflow: visible !important; /* Use page scroll */
+    flex: none !important;
+  }
+
+  /* Allow inner content to expand the container */
+  .readability-report__body {
+    overflow: visible !important;
+    height: auto !important;
+    flex: none !important;
+  }
+
+  /* 6. Fixed Bottom Command Bar */
+  .studio-command-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    z-index: 1000 !important;
+    padding: 12px 16px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05) !important;
+  }
+}
+
+/* --- Responsive Design: Increased Bottom Padding for Fixed Footer --- */
+
+@media (max-width: 900px) {
+  .hero-stage {
+    /* Increase padding to ensure the last part of the report is fully visible above the fixed footer */
+    padding-bottom: 180px !important; 
+  }
+
+  /* Ensure the main container allows for this extra space */
+  .hero-app {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+  
+  /* Additional safety margin for the side panel container */
+  .readability-side-panel {
+    margin-bottom: 20px !important;
+  }
+}
+
+/* --- Extra Small Screen Optimization --- */
+
+@media (max-width: 480px) {
+  /* 1. Further increase padding for potentially taller stacked footer */
+  .hero-stage {
+    padding-bottom: 240px !important; 
+  }
+
+  /* 2. Adjust command bar for density */
+  .studio-command-bar {
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+
+  .studio-command-bar__button {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  /* 3. Make jump input and slider more mobile-friendly */
+  .studio-command-bar__jump {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 4px !important;
+  }
+
+  .studio-command-bar__slider {
+    padding: 0 10px !important;
+  }
+}
+
+/* --- Slider Design: Sharp & Unified --- */
+
+.studio-command-bar__slider input[type='range'] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px; /* Thin, sharp track */
+  background: var(--vs-border); /* Light grey */
+  outline: none;
+  margin: 10px 0;
+  cursor: pointer;
+  border-radius: 0 !important; /* Force square ends */
+}
+
+/* Chrome, Safari, Edge, Opera */
+.studio-command-bar__slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--vs-text); /* Dark navy */
+  border: none;
+  cursor: pointer;
+  border-radius: 50% !important; /* Round thumb */
+  transition: background 0.2s ease;
+}
+
+.studio-command-bar__slider input[type='range']:hover::-webkit-slider-thumb {
+  background: var(--vs-primary); /* Blue on hover */
+}
+
+/* Firefox */
+.studio-command-bar__slider input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--vs-text);
+  border: none;
+  cursor: pointer;
+  border-radius: 50% !important;
+  transition: background 0.2s ease;
+}
+
+.studio-command-bar__slider input[type='range']:hover::-moz-range-thumb {
+  background: var(--vs-primary);
+}
+
+/* Disabled State */
+.studio-command-bar__slider input[type='range']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.studio-command-bar__slider input[type='range']:disabled::-webkit-slider-thumb {
+  background: var(--vs-border-strong);
+  cursor: not-allowed;
+}
+
+.studio-command-bar__slider input[type='range']::-webkit-slider-runnable-track {
+  background: transparent;
+  border-radius: 0 !important;
+}
+
+/* Slider Value Label */
+.studio-command-bar__value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--vs-text);
+  margin-top: 4px;
 }
