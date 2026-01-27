@@ -84,6 +84,7 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   const [autoCheckPending, setAutoCheckPending] = useState(false);
   const [isGuideVisible, setIsGuideVisible] = useState(false);
   const [isHowToUseVisible, setIsHowToUseVisible] = useState(false);
+  const [isTopVisible, setIsTopVisible] = useState(true);
 
 
   // -- Handlers & Logic --
@@ -471,8 +472,32 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   const countByKeyword = (keyword: string) =>
     currentReadability ? currentReadability.flags.filter((f) => f.includes(keyword)).length : 0;
 
-  // 10% または 2ページ移動の計算
-  const jumpAmount = pageCount > 10 ? Math.floor(pageCount * 0.1) : 2;
+  // 10% または 2ページ移動の計算 (切り上げで最低10%を確保)
+  const jumpAmount = pageCount <= 10 ? 2 : Math.ceil(pageCount * 0.1);
+
+  if (isTopVisible) {
+    return (
+      <div className="top-screen">
+        <header className="landing__header landing__header--app" aria-label="ViewSure">
+          <div className="landing__brand">
+            <img src={logoWhite} alt="ViewSure" className="landing__logo" />
+            <span className="landing__brand-text">ViewSure</span>
+          </div>
+        </header>
+        <div className="top-screen__content">
+          <img src={logoWhite} alt="ViewSure Icon" className="top-screen__icon" style={{ filter: 'invert(1) brightness(0.2)' }} />
+          <h1 className="top-screen__title">ViewSureで見やすい資料へ</h1>
+          <button
+            type="button"
+            className="top-screen__button"
+            onClick={() => setIsTopVisible(false)}
+          >
+            始める
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="hero-app">
