@@ -4659,32 +4659,34 @@ a {
   cursor: pointer;
 }
 
-/* --- Reverting Editor Screen to Friend's Simple Style (with Soft Corners & Responsive Fit) --- */
+/* --- Robust Layout Fix (Grid System) --- */
 
-/* Default: Fit to window for large screens */
 html, body {
   height: 100%;
   margin: 0;
+  overflow: hidden; /* App handles scroll */
 }
 
 .hero-app {
   background: #ffffff !important;
   border-radius: 0 !important;
-  height: 100vh; /* Fixed height by default */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* No scroll by default */
+  height: 100vh !important;
+  height: 100dvh !important; /* Mobile viewport fix */
+  display: grid !important;
+  grid-template-rows: auto 1fr auto !important; /* Header, Main, Footer */
+  overflow: hidden !important;
 }
 
-/* Header */
+/* 1. Header (Fixed Height) */
 .landing__header--app {
+  grid-row: 1;
   background: #ffffff !important;
   border-bottom: 1px solid #e2e8f0 !important;
   box-shadow: none !important;
   padding: 12px 24px !important;
   margin-bottom: 0 !important;
   border-radius: 0 !important;
-  flex-shrink: 0;
+  z-index: 10;
 }
 
 .landing__header--app .landing__brand-text {
@@ -4692,25 +4694,29 @@ html, body {
 }
 
 .landing__header--app .landing__logo {
-  filter: invert(1) !important;
+  filter: invert(1) brightness(0.2) !important;
 }
 
-/* Main Stage */
+/* 2. Main Stage (Flexible) */
 .hero-stage {
+  grid-row: 2;
   margin-top: 0 !important;
-  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Inner elements scroll */
+  padding: 0 !important;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Clip inner content */
-  padding: 0 !important;
 }
 
+/* The Viewer Panel Container */
 .hero-stage__panel--viewer {
+  flex: 1;
   display: flex !important;
   flex-direction: row !important;
   width: 100% !important;
   height: 100% !important;
-  padding: 12px !important; 
+  padding: 12px !important;
   gap: 12px !important;
   background: #ffffff !important;
   border: none !important;
@@ -4718,10 +4724,13 @@ html, body {
   align-items: stretch !important;
   max-width: none !important;
   box-sizing: border-box !important;
+  overflow: hidden;
 }
 
+/* PDF Viewport Area */
 .hero-viewport {
   flex: 1 !important;
+  min-width: 0; /* Allow shrinking */
   background: #f8f9fa !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 16px !important;
@@ -4733,7 +4742,31 @@ html, body {
   position: relative;
 }
 
-/* Side Panel */
+.viewport {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewport__content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewport__canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* Side Panel Area */
 .readability-side-panel {
   flex: 0 0 400px !important;
   background: #ffffff !important;
@@ -4745,24 +4778,18 @@ html, body {
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  min-height: 0; /* Crucial for flex scrolling */
 }
 
 .readability-report__body {
   flex: 1 !important;
-  overflow-y: auto !important;
+  overflow-y: auto !important; /* Enable scroll here */
   padding-right: 4px !important;
 }
 
-.readability-report__item {
-  background: #f8f9fa !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
-  padding: 16px !important;
-  margin-bottom: 12px !important;
-}
-
-/* Footer */
+/* 3. Footer / Command Bar (Fixed Height) */
 .studio-command-bar {
+  grid-row: 3;
   background: #ffffff !important;
   border-top: 1px solid #e2e8f0 !important;
   padding: 16px 24px !important;
@@ -4771,58 +4798,28 @@ html, body {
   box-shadow: none !important;
   backdrop-filter: none !important;
   justify-content: center !important;
-  flex-shrink: 0;
+  z-index: 10;
+  width: 100%;
 }
 
-.studio-command-bar__button {
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-  width: 44px !important;
-  height: 44px !important;
-  transition: all 0.2s ease !important;
-}
-
-.studio-command-bar__button:hover {
-  background: #f1f5f9 !important;
-  border-color: #94a3b8 !important;
-  transform: translateY(-1px) !important;
-}
-
-.viewport__canvas {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-}
-
-.guide-modal {
-  border-radius: 24px !important;
-  background: #ffffff !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1) !important;
-}
-
-.guide-close-button {
-  border-radius: 50% !important;
-}
-
-/* --- Responsive & Small Screen Handling --- */
+/* --- Responsive Layout (Mobile/Tablet) --- */
 @media (max-width: 900px), (max-height: 700px) {
-  /* Allow global scroll */
-  html, body {
-    overflow: auto;
-    height: auto;
+  /* Break the strict grid for small screens */
+  .hero-app {
+    display: flex !important;
+    height: 100% !important; /* Allow growing */
+    min-height: 100vh;
+    overflow: auto !important; /* Global scroll enabled */
   }
 
-  .hero-app {
-    height: auto !important; /* Unlock height */
-    min-height: 100vh;
-    overflow: visible !important;
+  .landing__header--app {
+    flex-shrink: 0;
   }
 
   .hero-stage {
+    flex: 1 0 auto; /* Grow to fill space */
+    height: auto !important;
     overflow: visible !important;
-    flex: none !important;
   }
 
   .hero-stage__panel--viewer {
@@ -4830,6 +4827,7 @@ html, body {
     height: auto !important;
     padding: 16px !important;
     gap: 24px !important;
+    overflow: visible !important;
   }
 
   /* Viewport takes defined height */
@@ -4847,13 +4845,20 @@ html, body {
     width: 100% !important;
   }
   
+  .readability-report__body {
+    overflow: visible !important;
+  }
+  
   .studio-command-bar {
     position: sticky;
     bottom: 0;
-    z-index: 100;
+    left: 0;
     border-top: 1px solid #ccc;
+    flex-shrink: 0;
   }
 }
+
+
 
 /* Mobile Specific Optimizations */
 @media (max-width: 600px) {
