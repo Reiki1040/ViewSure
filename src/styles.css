@@ -20,6 +20,64 @@
   --vs-text-muted: rgba(31, 35, 56, 0.7);
 }
 
+/* --- Top Screen Styles --- */
+
+.top-screen {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  z-index: 2000;
+  color: #12182d;
+}
+
+.top-screen__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  max-width: 900px;
+  padding: 40px;
+  margin: 0 auto;
+}
+
+.top-screen__icon {
+  width: 140px;
+  height: auto;
+}
+
+.top-screen__title {
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.top-screen__button {
+  padding: 12px 48px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: #4f6aff;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  border-radius: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.top-screen__button:hover {
+  background: #3446d4;
+  transform: translateY(-1px);
+}
+
 html {
   scroll-behavior: smooth;
 }
