@@ -4753,7 +4753,8 @@ html, body {
 /* PDF Viewport Area */
 .hero-viewport {
   flex: 1 !important;
-  min-width: 0; /* Allow shrinking */
+  min-width: 0; /* Allow shrinking width */
+  min-height: 0; /* Allow shrinking height */
   background: #f8f9fa !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 16px !important;
@@ -4771,6 +4772,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  padding: 0 !important; /* Remove internal padding */
+  background: transparent !important; /* No dark background */
 }
 
 .viewport__content {
@@ -4779,6 +4783,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  padding: 0 !important;
 }
 
 .viewport__canvas {
@@ -4787,6 +4793,11 @@ html, body {
   width: auto !important;
   height: auto !important;
   object-fit: contain !important;
+  display: block; /* Remove inline spacing */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  background: #ffffff; /* PDF background is white */
 }
 
 /* Side Panel Area */
