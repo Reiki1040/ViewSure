@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import FileUploader, { type FileUploaderHandle } from './components/FileUploader';
 import ProjectionViewport from './components/ProjectionViewport';
 
+import LandingScreen from './components/LandingScreen';
+
 // Assets
 import logoWhite from './assets/ViewSureIconWhite.png';
 import firstPageIcon from './assets/first_page.png';
@@ -234,6 +236,20 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     goToPage(parsed);
   }, [goToPage, pageInputValue]);
 
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * ファイルが選択されたときの処理（隠しインプット用）
+   */
+  const handleHiddenInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      void handleFileSelected(files[0]);
+    }
+    // 同じファイルを再度選択できるように値をリセット
+    event.target.value = '';
+  }, [handleFileSelected]);
+
   /**
    * ファイル選択ダイアログを開く
    */
@@ -241,7 +257,12 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     if (pdfLoading) {
       return;
     }
-    fileUploaderRef.current?.openFileDialog();
+    // FileUploaderが表示されていればそれを使う、なければ隠しインプットを使う
+    if (fileUploaderRef.current) {
+      fileUploaderRef.current.openFileDialog();
+    } else {
+      hiddenInputRef.current?.click();
+    }
   }, [pdfLoading]);
 
   const handleTogglePreview = useCallback(() => {
@@ -455,6 +476,38 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     };
   }, [goToPage, pageCount, currentPage]); // pageCountを依存配列に追加
 
+  /**
+   * スタート画面からアプリ画面へ遷移する
+   */
+  const handleStart = useCallback(() => {
+    // 履歴に追加（戻るボタンで戻れるようにする）
+    window.history.pushState({ app: true }, '', '#app');
+    setIsTopVisible(false);
+  }, []);
+
+  // ブラウザバックの検知
+  useEffect(() => {
+    const handlePopState = () => {
+      // 履歴が戻った（ハッシュが消えた）場合、トップ画面を表示
+      if (window.location.hash !== '#app') {
+        setIsTopVisible(true);
+      } else {
+        setIsTopVisible(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    // 初期ロード時にハッシュがあればアプリ画面を表示
+    if (window.location.hash === '#app') {
+      setIsTopVisible(false);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // -- Render Helpers --
   
   const hasDocument = pageCount > 0;
@@ -476,31 +529,21 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   const jumpAmount = pageCount <= 10 ? 2 : Math.ceil(pageCount * 0.1);
 
   if (isTopVisible) {
-    return (
-      <div className="top-screen">
-        <header className="landing__header landing__header--app" aria-label="ViewSure">
-          <div className="landing__brand">
-            <img src={logoWhite} alt="ViewSure" className="landing__logo" />
-            <span className="landing__brand-text">ViewSure</span>
-          </div>
-        </header>
-        <div className="top-screen__content">
-          <img src={logoWhite} alt="ViewSure Icon" className="top-screen__icon" style={{ filter: 'invert(1) brightness(0.2)' }} />
-          <h1 className="top-screen__title">ViewSureで見やすい資料へ</h1>
-          <button
-            type="button"
-            className="top-screen__button"
-            onClick={() => setIsTopVisible(false)}
-          >
-            始める
-          </button>
-        </div>
-      </div>
-    );
+    return <LandingScreen onStart={handleStart} />;
   }
 
   return (
     <div className="hero-app">
+      {/* Hidden Input for Re-upload */}
+      <input
+        type="file"
+        accept=".pdf,application/pdf"
+        ref={hiddenInputRef}
+        style={{ display: 'none' }}
+        onChange={handleHiddenInputChange}
+        aria-hidden="true"
+      />
+
       {/* Header */}
       <header className="landing__header landing__header--app" aria-label="ViewSure">
         <div className="landing__brand">
