@@ -306,3 +306,62 @@ export const detectPrimaryColors = (ctx: CanvasRenderingContext2D): PrimaryColor
   
   return Array.from(found);
 };
+export type ColorBalanceResult = {
+  base: { color: string; ratio: number };
+  main: { color: string; ratio: number };
+  accent: { color: string; ratio: number };
+  isBalanced: boolean;
+};
+
+export const analyzeColorBalance = (ctx: CanvasRenderingContext2D): ColorBalanceResult => {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+  const imageData = ctx.getImageData(0, 0, width, height).data;
+  
+  const stride = 4 * 10;
+  const colorCounts: Record<string, number> = {};
+  let totalSamples = 0;
+
+  const rgbToHex = (r: number, g: number, b: number) => {
+    const q = 32;
+    const qr = Math.round(r / q) * q;
+    const qg = Math.round(g / q) * q;
+    const qb = Math.round(b / q) * q;
+    const cr = Math.min(255, qr);
+    const cg = Math.min(255, qg);
+    const cb = Math.min(255, qb);
+    return `#${((1 << 24) + (cr << 16) + (cg << 8) + cb).toString(16).slice(1).toUpperCase()}`;
+  };
+
+  for (let i = 0; i < imageData.length; i += stride) {
+    const r = imageData[i];
+    const g = imageData[i + 1];
+    const b = imageData[i + 2];
+    const hex = rgbToHex(r, g, b);
+    colorCounts[hex] = (colorCounts[hex] || 0) + 1;
+    totalSamples++;
+  }
+
+  const sortedColors = Object.entries(colorCounts).sort(([, countA], [, countB]) => countB - countA);
+
+  const getRatio = (count: number) => Math.round((count / totalSamples) * 100);
+
+  const baseColor = sortedColors[0] || ['#FFFFFF', 0];
+  const mainColor = sortedColors[1] || ['#000000', 0];
+  const accentColor = sortedColors[2] || ['#808080', 0];
+
+  const baseRatio = getRatio(baseColor[1]);
+  const mainRatio = getRatio(mainColor[1]);
+  const accentRatio = Math.max(0, 100 - baseRatio - mainRatio);
+
+  const isBaseGood = baseRatio >= 50 && baseRatio <= 90;
+  const isMainGood = mainRatio >= 10 && mainRatio <= 40;
+  const isAccentGood = accentRatio >= 0 && accentRatio <= 20;
+
+  return {
+    base: { color: baseColor[0], ratio: baseRatio },
+    main: { color: mainColor[0], ratio: mainRatio },
+    accent: { color: accentColor[0], ratio: accentRatio },
+    isBalanced: isBaseGood && isMainGood && isAccentGood
+  };
+};
