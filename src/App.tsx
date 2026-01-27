@@ -442,6 +442,23 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     }
   }, [autoCheckPending, handleReadabilityCheck, pageCount, pdfLoading]);
 
+  // 画面遷移時のスクロール制御
+  useEffect(() => {
+    if (isTopVisible) {
+      document.body.style.overflow = 'auto';
+      document.body.style.height = 'auto';
+    } else {
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+    }
+    
+    // クリーンアップ
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+    };
+  }, [isTopVisible]);
+
   // キーボードショートカットの登録
   useEffect(() => {
     const hasDocument = pageCount > 0;
