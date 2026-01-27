@@ -14,7 +14,7 @@ import uploadIcon from './assets/import.png';
 // Hooks & Utils
 import { usePdfRenderer } from './hooks/usePdfRenderer';
 import { initWasm, applyToneMapping } from './utils/toneMapping';
-import { analyzePageContrast, detectPrimaryColors } from './utils/wcag';
+import { analyzePageContrast, detectPrimaryColors, analyzeColorBalance, type ColorBalanceResult } from './utils/wcag';
 import { extractImagesFromPdf, type ImageCrop } from './utils/imageExtractor';
 
 // Constants
@@ -31,6 +31,8 @@ type PageFinding = {
   contrastDetails?: string[];
   /** 原色の詳細（検出された色） */
   primaryColorDetails?: string[];
+  /** 配色バランスの結果 */
+  colorBalance?: ColorBalanceResult;
   /** 小さい文字の詳細（テキスト抜粋とサイズ） */
   fontSizeDetails?: string[];
 };
@@ -332,6 +334,15 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
             });
           }
         }
+
+        // 配色バランス解析
+        let colorBalance: ColorBalanceResult | undefined;
+        if (ctx) {
+          colorBalance = analyzeColorBalance(ctx);
+          if (!colorBalance.isBalanced) {
+            flags.push('配色バランスが崩れています');
+          }
+        }
         
         // コントラスト解析
         if (ctx) {
@@ -340,13 +351,13 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
             const samples = contrastIssues.map((issue) => `「${issue.text}」(比 ${issue.ratio} < ${issue.required})`);
             flags.push(`コントラスト: ${contrastIssues.length}件`);
             // コントラスト詳細は別に保持して、UIで展開表示する
-            perPageFindings.push({ page: index + 1, flags, contrastDetails: samples, fontSizeDetails, primaryColorDetails });
+            perPageFindings.push({ page: index + 1, flags, contrastDetails: samples, fontSizeDetails, primaryColorDetails, colorBalance });
             continue; // このページは既に perPageFindings に追加したのでスキップ
           }
         }
 
         if (flags.length) {
-          perPageFindings.push({ page: index + 1, flags, fontSizeDetails, primaryColorDetails });
+          perPageFindings.push({ page: index + 1, flags, fontSizeDetails, primaryColorDetails, colorBalance });
         }
       } catch (err) {
         console.error(`Page ${index + 1} analysis failed`, err);
@@ -547,6 +558,15 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
                           原色: {countByKeyword('原色')}
                         </button>
                       )}
+                      {countByKeyword('配色') > 0 && (
+                        <button
+                          type="button"
+                          className={`readability-chip ${readabilityFilter === '配色' ? 'is-active' : ''}`}
+                          onClick={() => setReadabilityFilter(readabilityFilter === '配色' ? null : '配色')}
+                        >
+                          配色: {countByKeyword('配色')}
+                        </button>
+                      )}
                     </div>
                     <div className="readability-report__list">
                       {currentReadability ? (
@@ -595,6 +615,16 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
                                   {currentReadability.primaryColorDetails.map((detail, idx) => (
                                     <li key={`${currentReadability.page}-primary-${idx}`}>{detail}</li>
                                   ))}
+                                </ul>
+                              </details>
+                            ) : null}
+                            {currentReadability.colorBalance && (!readabilityFilter || readabilityFilter === '配色') ? (
+                              <details className="readability-contrast-details" open={!currentReadability.colorBalance.isBalanced}>
+                                <summary>配色バランス ({currentReadability.colorBalance.isBalanced ? '良好' : '要調整'})</summary>
+                                <ul>
+                                  <li>ベース: {currentReadability.colorBalance.base.ratio}% ({currentReadability.colorBalance.base.color}) {currentReadability.colorBalance.base.ratio < 50 || currentReadability.colorBalance.base.ratio > 90 ? '⚠️ 70%推奨' : 'OK'}</li>
+                                  <li>メイン: {currentReadability.colorBalance.main.ratio}% ({currentReadability.colorBalance.main.color}) {currentReadability.colorBalance.main.ratio < 10 || currentReadability.colorBalance.main.ratio > 40 ? '⚠️ 25%推奨' : 'OK'}</li>
+                                  <li>アクセント: {currentReadability.colorBalance.accent.ratio}% ({currentReadability.colorBalance.accent.color}) {currentReadability.colorBalance.accent.ratio > 20 ? '⚠️ 5%推奨' : 'OK'}</li>
                                 </ul>
                               </details>
                             ) : null}
@@ -728,6 +758,8 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
               <li><strong>行間が狭い:</strong> 行と行の間隔がほとんどないページでは詰まって見えるため、行間不足を指摘します。</li>
               <li><strong>情報量が多すぎる:</strong> 1ページ内に文章が詰め込み過ぎている場合（文字数が多い）、読みやすさ低下のサインとしてお知らせします。</li>
               <li><strong>コントラスト不足:</strong> 文字と背景の明るさの差が小さい（WCAGの推奨値を下回る）箇所を見つけて報告します。</li>
+              <li><strong>原色の使用:</strong> 赤・緑・青・黄・水色・ピンクなどの原色は、プロジェクターで投影した際に目がチカチカしたり、視認性が悪くなる可能性があるため、注意喚起します。</li>
+              <li><strong>配色バランスの崩れ:</strong> ベースカラー（70%）、メインカラー（25%）、アクセントカラー（5%）の黄金比から大きく外れている場合、バランスの乱れとして指摘します。</li>
             </ul>
             <p>目安となる適切な文字サイズ: 本文は 14〜18px 程度、見出しは 20〜32px 程度にすると、一般的なディスプレイやプロジェクターでも読みやすくなります。</p>
             <p>※ 実際の修正は行いません。指摘を参考に元の資料を編集してください。</p>
