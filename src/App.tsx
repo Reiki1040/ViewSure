@@ -14,7 +14,7 @@ import uploadIcon from './assets/import.png';
 // Hooks & Utils
 import { usePdfRenderer } from './hooks/usePdfRenderer';
 import { initWasm, applyToneMapping } from './utils/toneMapping';
-import { analyzePageContrast } from './utils/wcag';
+import { analyzePageContrast, detectPrimaryColors } from './utils/wcag';
 import { extractImagesFromPdf, type ImageCrop } from './utils/imageExtractor';
 
 // Constants
@@ -29,6 +29,8 @@ type PageFinding = {
   flags: string[];
   /** コントラストの詳細（テキスト抜粋と比率） */
   contrastDetails?: string[];
+  /** 原色の詳細（検出された色） */
+  primaryColorDetails?: string[];
   /** 小さい文字の詳細（テキスト抜粋とサイズ） */
   fontSizeDetails?: string[];
 };
@@ -310,6 +312,26 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
         
         if (maxFont > 72) flags.push('極端に大きい文字が含まれる');
         if (minGap < 12) flags.push('行間が詰まり気味');
+
+        // 原色チェック
+        let primaryColorDetails: string[] = [];
+        if (ctx) {
+          const detected = detectPrimaryColors(ctx);
+          if (detected.length > 0) {
+            flags.push(`原色が含まれる: ${detected.length}色`);
+            primaryColorDetails = detected.map(c => {
+               switch(c) {
+                 case 'Red': return '赤 (Red: #FF0000)';
+                 case 'Green': return '緑 (Green: #00FF00)';
+                 case 'Blue': return '青 (Blue: #0000FF)';
+                 case 'Yellow': return '黄 (Yellow: #FFFF00)';
+                 case 'Cyan': return '水色 (Cyan: #00FFFF)';
+                 case 'Magenta': return 'ピンク (Pink: #FF00FF)';
+                 default: return c;
+               }
+            });
+          }
+        }
         
         // コントラスト解析
         if (ctx) {
@@ -318,13 +340,13 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
             const samples = contrastIssues.map((issue) => `「${issue.text}」(比 ${issue.ratio} < ${issue.required})`);
             flags.push(`コントラスト: ${contrastIssues.length}件`);
             // コントラスト詳細は別に保持して、UIで展開表示する
-            perPageFindings.push({ page: index + 1, flags, contrastDetails: samples, fontSizeDetails });
+            perPageFindings.push({ page: index + 1, flags, contrastDetails: samples, fontSizeDetails, primaryColorDetails });
             continue; // このページは既に perPageFindings に追加したのでスキップ
           }
         }
 
         if (flags.length) {
-          perPageFindings.push({ page: index + 1, flags, fontSizeDetails });
+          perPageFindings.push({ page: index + 1, flags, fontSizeDetails, primaryColorDetails });
         }
       } catch (err) {
         console.error(`Page ${index + 1} analysis failed`, err);
@@ -480,34 +502,51 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
                 {readabilityDetails.length ? (
                   <>
                     <div className="readability-report__summary">
-                      <button
-                        type="button"
-                        className={`readability-chip ${readabilityFilter === '情報量が多い' ? 'is-active' : ''}`}
-                        onClick={() => setReadabilityFilter(readabilityFilter === '情報量が多い' ? null : '情報量が多い')}
-                      >
-                        情報量多い: {countByKeyword('情報量が多い')}
-                      </button>
-                      <button
-                        type="button"
-                        className={`readability-chip ${readabilityFilter === '小さい文字' ? 'is-active' : ''}`}
-                        onClick={() => setReadabilityFilter(readabilityFilter === '小さい文字' ? null : '小さい文字')}
-                      >
-                        小さい文字: {countByKeyword('小さい文字')}
-                      </button>
-                      <button
-                        type="button"
-                        className={`readability-chip ${readabilityFilter === '行間' ? 'is-active' : ''}`}
-                        onClick={() => setReadabilityFilter(readabilityFilter === '行間' ? null : '行間')}
-                      >
-                        行間: {countByKeyword('行間')}
-                      </button>
-                      <button
-                        type="button"
-                        className={`readability-chip ${readabilityFilter === 'コントラスト' ? 'is-active' : ''}`}
-                        onClick={() => setReadabilityFilter(readabilityFilter === 'コントラスト' ? null : 'コントラスト')}
-                      >
-                        コントラスト: {countByKeyword('コントラスト')}
-                      </button>
+                      {countByKeyword('情報量が多い') > 0 && (
+                        <button
+                          type="button"
+                          className={`readability-chip ${readabilityFilter === '情報量が多い' ? 'is-active' : ''}`}
+                          onClick={() => setReadabilityFilter(readabilityFilter === '情報量が多い' ? null : '情報量が多い')}
+                        >
+                          情報量多い: {countByKeyword('情報量が多い')}
+                        </button>
+                      )}
+                      {countByKeyword('小さい文字') > 0 && (
+                        <button
+                          type="button"
+                          className={`readability-chip ${readabilityFilter === '小さい文字' ? 'is-active' : ''}`}
+                          onClick={() => setReadabilityFilter(readabilityFilter === '小さい文字' ? null : '小さい文字')}
+                        >
+                          小さい文字: {countByKeyword('小さい文字')}
+                        </button>
+                      )}
+                      {countByKeyword('行間') > 0 && (
+                        <button
+                          type="button"
+                          className={`readability-chip ${readabilityFilter === '行間' ? 'is-active' : ''}`}
+                          onClick={() => setReadabilityFilter(readabilityFilter === '行間' ? null : '行間')}
+                        >
+                          行間: {countByKeyword('行間')}
+                        </button>
+                      )}
+                      {countByKeyword('コントラスト') > 0 && (
+                        <button
+                          type="button"
+                          className={`readability-chip ${readabilityFilter === 'コントラスト' ? 'is-active' : ''}`}
+                          onClick={() => setReadabilityFilter(readabilityFilter === 'コントラスト' ? null : 'コントラスト')}
+                        >
+                          コントラスト: {countByKeyword('コントラスト')}
+                        </button>
+                      )}
+                      {countByKeyword('原色') > 0 && (
+                        <button
+                          type="button"
+                          className={`readability-chip ${readabilityFilter === '原色' ? 'is-active' : ''}`}
+                          onClick={() => setReadabilityFilter(readabilityFilter === '原色' ? null : '原色')}
+                        >
+                          原色: {countByKeyword('原色')}
+                        </button>
+                      )}
                     </div>
                     <div className="readability-report__list">
                       {currentReadability ? (
@@ -545,6 +584,16 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
                                 <ul>
                                   {currentReadability.contrastDetails.map((detail, idx) => (
                                     <li key={`${currentReadability.page}-contrast-${idx}`}>{detail}</li>
+                                  ))}
+                                </ul>
+                              </details>
+                            ) : null}
+                            {currentReadability.primaryColorDetails && currentReadability.primaryColorDetails.length > 0 && (!readabilityFilter || readabilityFilter === '原色') ? (
+                              <details className="readability-contrast-details">
+                                <summary>原色の使用 ({currentReadability.primaryColorDetails.length} 色)</summary>
+                                <ul>
+                                  {currentReadability.primaryColorDetails.map((detail, idx) => (
+                                    <li key={`${currentReadability.page}-primary-${idx}`}>{detail}</li>
                                   ))}
                                 </ul>
                               </details>

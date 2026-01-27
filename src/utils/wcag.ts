@@ -12,6 +12,8 @@ export interface ContrastIssue {
   box: { x: number; y: number; width: number; height: number };
 }
 
+export type PrimaryColorType = 'Red' | 'Green' | 'Blue' | 'Yellow' | 'Cyan' | 'Magenta';
+
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const computeLuma = (r: number, g: number, b: number) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
@@ -233,4 +235,74 @@ export const logContrastIssues = (pageIndex: number, issues: ContrastIssue[]) =>
     );
   });
   console.groupEnd();
+};
+
+/**
+ * キャンバス内の原色（赤、緑、青、黄）の使用を検出する
+ * 
+ * @param ctx 描画済みキャンバスコンテキスト
+ * @returns 検出された原色のリスト
+ */
+export const detectPrimaryColors = (ctx: CanvasRenderingContext2D): PrimaryColorType[] => {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+  // 画像データを取得
+  const imageData = ctx.getImageData(0, 0, width, height).data;
+  
+  // 検出された色を保持するSet
+  const found = new Set<PrimaryColorType>();
+  
+  // 許容誤差（圧縮ノイズなどを考慮）
+  const threshold = 10;
+  
+  // 近似判定関数
+  const isClose = (val: number, target: number) => Math.abs(val - target) <= threshold;
+  
+  // ピクセル走査（ストライド10で高速化）
+  // 4要素(r,g,b,a) * 10ピクセルスキップ = 40
+  const strideStep = 4 * 10;
+  
+  for (let i = 0; i < imageData.length; i += strideStep) {
+    const r = imageData[i];
+    const g = imageData[i + 1];
+    const b = imageData[i + 2];
+    // アルファ値（imageData[i+3]）は無視（背景色とのブレンドは考慮しない、純粋なピクセル値を見る）
+    
+    // 赤 (Red): #FF0000 (255, 0, 0)
+    if (isClose(r, 255) && isClose(g, 0) && isClose(b, 0)) {
+      found.add('Red');
+    }
+    
+    // 緑 (Green): #00FF00 (0, 255, 0)
+    if (isClose(r, 0) && isClose(g, 255) && isClose(b, 0)) {
+      found.add('Green');
+    }
+    
+    // 青 (Blue): #0000FF (0, 0, 255)
+    if (isClose(r, 0) && isClose(g, 0) && isClose(b, 255)) {
+      found.add('Blue');
+    }
+    
+    // 黄 (Yellow): #FFFF00 (255, 255, 0)
+    if (isClose(r, 255) && isClose(g, 255) && isClose(b, 0)) {
+      found.add('Yellow');
+    }
+
+    // 水色 (Cyan): #00FFFF (0, 255, 255)
+    if (isClose(r, 0) && isClose(g, 255) && isClose(b, 255)) {
+      found.add('Cyan');
+    }
+
+    // ピンク (Magenta): #FF00FF (255, 0, 255)
+    if (isClose(r, 255) && isClose(g, 0) && isClose(b, 255)) {
+      found.add('Magenta');
+    }
+    
+    // 全て見つかったらループを抜ける
+    if (found.size === 6) {
+      break;
+    }
+  }
+  
+  return Array.from(found);
 };
