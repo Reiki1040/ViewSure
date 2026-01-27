@@ -2337,9 +2337,10 @@ a {
 
 .landing__title {
   margin: 0;
-  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-size: clamp(1.8rem, 4.5vw, 3.2rem);
   font-weight: 800;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .landing__description {

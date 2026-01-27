@@ -1,0 +1,31 @@
+[debug] [2026-01-27T04:52:30.503Z] ----------------------------------------------------------------------
+[debug] [2026-01-27T04:52:30.509Z] Command:       /opt/homebrew/Cellar/node@20/20.19.6/bin/node /opt/homebrew/bin/firebase deploy
+[debug] [2026-01-27T04:52:30.509Z] CLI Version:   14.23.0
+[debug] [2026-01-27T04:52:30.509Z] Platform:      darwin
+[debug] [2026-01-27T04:52:30.509Z] Node Version:  v20.19.6
+[debug] [2026-01-27T04:52:30.509Z] Time:          Tue Jan 27 2026 13:52:30 GMT+0900 (日本標準時)
+[debug] [2026-01-27T04:52:30.509Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-27T04:52:30.614Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-27T04:52:30.614Z] > authorizing via signed-in user (e235738@ie.u-ryukyu.ac.jp)
+[debug] [2026-01-27T04:52:30.614Z] [iam] checking project viewsure-7797f for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-01-27T04:52:30.615Z] Checked if tokens are valid: true, expires at: 1769492837274
+[debug] [2026-01-27T04:52:30.615Z] Checked if tokens are valid: true, expires at: 1769492837274
+[debug] [2026-01-27T04:52:30.615Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/viewsure-7797f:testIamPermissions [none]
+[debug] [2026-01-27T04:52:30.615Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/viewsure-7797f:testIamPermissions x-goog-quota-user=projects/viewsure-7797f
+[debug] [2026-01-27T04:52:30.616Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/viewsure-7797f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:52:31.519Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/viewsure-7797f:testIamPermissions 200
+[debug] [2026-01-27T04:52:31.520Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/viewsure-7797f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:52:31.521Z] Checked if tokens are valid: true, expires at: 1769492837274
+[debug] [2026-01-27T04:52:31.521Z] Checked if tokens are valid: true, expires at: 1769492837274
+[debug] [2026-01-27T04:52:31.521Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/viewsure-7797f [none]
+[debug] [2026-01-27T04:52:32.025Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/viewsure-7797f 200
+[debug] [2026-01-27T04:52:32.025Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/viewsure-7797f {"projectId":"viewsure-7797f","projectNumber":"854505215291","displayName":"ViewSure","name":"projects/viewsure-7797f","resources":{"hostingSite":"viewsure-7797f"},"state":"ACTIVE","etag":"1_841512aa-8cd9-45cb-bb77-e8060d4ae291"}
+[info] 
+[info] === Deploying to 'viewsure-7797f'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-01-27T04:52:32.033Z] Checked if tokens are valid: true, expires at: 1769492837274
+[debug] [2026-01-27T04:52:32.034Z] Checked if tokens are valid: true, expires at: 1769492837274
+[debug] [2026-01-27T04:52:32.034Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/viewsure-7797f/versions [none]
+[debug] [2026-01-27T04:52:32.034Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/viewsure-7797f/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}

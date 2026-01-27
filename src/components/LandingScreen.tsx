@@ -21,9 +21,9 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
       <main className="landing__hero">
         <img src={logoWhite} alt="ViewSure" className="landing__hero-logo" />
         <div className="landing__eyebrow">Projection Copilot</div>
-        <h1 className="landing__title">ViewSureでプロジェクター映えする資料へ</h1>
+        <h1 className="landing__title">ViewSureで見やすい資料へ</h1>
         <p className="landing__description">
-          スライドを WCAG に基づき最適化。プロジェクター環境でのシミュレーションを実行。仕上がりをワンランク上へ。
+          スライドの視認性とアクセシビリティをチェック。プロジェクター環境でのシミュレーションを実行。仕上がりをワンランク上へ。
         </p>
         <div className="landing__cta-group">
           <button type="button" className="landing__cta landing__cta--primary" onClick={onStart}>
@@ -39,7 +39,7 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
         <div className="landing__feature-grid">
           <article className="landing__feature-card">
             <span className="landing__feature-accent">01</span>
-            <h3>WCAGに基づく読みやすさチェック</h3>
+            <h3>読みやすさガイドラインに基づくチェック</h3>
             <p>コントラストや文字サイズ、行間、情報量を自動チェック。問題があるページと箇所をリストアップします。</p>
           </article>
         </div>
@@ -76,7 +76,7 @@ const LandingScreen = ({ onStart }: LandingScreenProps) => {
           </article>
           <article className="landing__feature-card">
             <h3>3. 読みにくさをチェック</h3>
-            <p>チェックボタンでWCAGに基づいた問題点を検出。問題ページと内容をリストで確認し、元の資料を修正してください。</p>
+            <p>チェックボタンで読みやすさに関する問題点を検出。問題ページと内容をリストで確認し、元の資料を修正してください。</p>
           </article>
         </div>
       </section>
