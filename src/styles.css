@@ -4757,7 +4757,7 @@ html, body {
   min-height: 0; /* Allow shrinking height */
   background: #f8f9fa !important;
   border: 1px solid #e2e8f0 !important;
-  border-radius: 16px !important;
+  border-radius: 0 !important; /* Sharp corners to show full PDF */
   padding: 20px !important;
   display: flex !important;
   align-items: center !important;
@@ -4775,6 +4775,7 @@ html, body {
   overflow: hidden;
   padding: 0 !important; /* Remove internal padding */
   background: transparent !important; /* No dark background */
+  border-radius: 0 !important;
 }
 
 .viewport__content {
@@ -4785,6 +4786,7 @@ html, body {
   justify-content: center;
   position: relative;
   padding: 0 !important;
+  border-radius: 0 !important;
 }
 
 .viewport__canvas {
@@ -4796,7 +4798,7 @@ html, body {
   display: block; /* Remove inline spacing */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
   border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
+  border-radius: 0 !important; /* Sharp corners to show full PDF */
   background: #ffffff; /* PDF background is white */
 }
 
@@ -4988,13 +4990,37 @@ html, body {
   box-shadow: 0 4px 12px rgba(126, 250, 255, 0.2) !important;
 }
 
-/* Transition Animation for Landing Screen */
-.landing {
-  transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+/* --- Button Shape Update (Rectangle with slight radius) --- */
+.landing__cta {
+  border-radius: 12px !important; /* Slightly rounded rectangle */
 }
 
-.landing--exiting {
-  opacity: 0;
-  transform: translateY(-40px) scale(0.98);
-  pointer-events: none;
+.readability-guide-trigger {
+  border-radius: 8px !important; /* Slightly rounded rectangle */
+}
+
+.top-screen__button {
+  border-radius: 12px !important;
+}
+
+/* --- Layout Fix for Small Widths --- */
+.hero-app {
+  min-width: 320px; /* Ensure minimum usable width */
+  overflow-x: hidden !important; /* Prevent horizontal scroll */
+}
+
+.landing__header--app {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hero-stage__panel--viewer {
+  min-width: 0 !important; /* Allow shrinking */
+  flex-wrap: nowrap; /* Keep side-by-side on desktop */
+}
+
+@media (max-width: 900px) {
+  .hero-stage__panel--viewer {
+    flex-wrap: wrap !important; /* Stack on mobile */
+  }
 }
