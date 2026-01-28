@@ -22,46 +22,6 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStart }) => {
 
   return (
     <div className="landing">
-      <header className="landing__header">
-        <div className="landing__brand">
-          <img src={ViewSureLogo} alt="ViewSure" className="landing__logo" />
-          <span className="landing__brand-text">ViewSure</span>
-        </div>
-        <nav className="landing__nav">
-          <a href="#features">特徴</a>
-          <button 
-            type="button" 
-            onClick={() => setIsAboutOpen(true)}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: 'rgba(215, 224, 255, 0.72)',
-              fontSize: '0.98rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              padding: 0,
-              fontFamily: 'inherit'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.color = 'rgba(153, 178, 255, 0.95)'}
-            onMouseOut={(e) => e.currentTarget.style.color = 'rgba(215, 224, 255, 0.72)'}
-          >
-            About
-          </button>
-          <a 
-            href="https://github.com/Reiki1040/ViewSure" 
-            target="_blank" 
-            rel="noopener noreferrer"
-          >
-            GitHub
-          </a>
-        </nav>
-        <div className="landing__header-actions">
-          <button className="landing__header-cta" onClick={onStart}>
-            アプリを起動
-          </button>
-        </div>
-      </header>
-
       {isAboutOpen && (
         <div className="guide-modal-overlay" onClick={() => setIsAboutOpen(false)}>
           <div className="guide-modal" onClick={(e) => e.stopPropagation()}>
@@ -90,11 +50,11 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStart }) => {
       <main className="landing__main">
         <section className="landing__hero">
           <div className="landing__hero-text">
-            <img src={ViewSureLogo} alt="" className="landing__hero-logo" style={{ width: '120px', marginBottom: '24px', opacity: 0.9, display: 'block', margin: '0 auto' }} />
+            <div className="landing__hero-group">
+              <img src={ViewSureLogo} alt="" className="landing__hero-logo" />
+              <h1 className="landing__title">ViewSure</h1>
+            </div>
             <span className="landing__eyebrow">Projection Checker</span>
-            <h1 className="landing__title">
-              ViewSureで 見やすい資料へ
-            </h1>
             <p className="landing__description">
               テキストサイズなどをチェックし、見やすい資料作成をサポートします。
             </p>

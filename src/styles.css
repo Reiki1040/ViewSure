@@ -1106,6 +1106,8 @@ a {
   width: 52px;
   height: 52px;
   object-fit: contain;
+  filter: brightness(0);
+  mix-blend-mode: multiply;
 }
 
 .drop-zone__title {
@@ -1144,13 +1146,13 @@ a {
   align-items: center;
   justify-content: center;
   font-size: 2.4rem;
-  background: rgba(80, 104, 212, 0.12);
+  background: transparent;
   color: #313f94;
 }
 
 .drop-zone--hero:hover .drop-zone__icon,
 .drop-zone--hero.is-active .drop-zone__icon {
-  background: rgba(79, 106, 255, 0.16);
+  background: transparent;
   color: #2735a0;
 }
 
@@ -3010,13 +3012,21 @@ a {
   position: relative;
 }
 
+.landing__hero-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.34s;
+}
+
 .landing__hero-logo {
   width: clamp(72px, 10vw, 120px);
   height: clamp(72px, 10vw, 120px);
   object-fit: contain;
   filter: drop-shadow(0 16px 28px rgba(18, 28, 68, 0.55));
-  opacity: 0;
-  animation: landingHeroUp 0.85s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.18s;
 }
 
 .landing__eyebrow {
@@ -3037,8 +3047,6 @@ a {
   background: linear-gradient(110deg, #78a9ff, #70e2ff, #9a83ff);
   -webkit-background-clip: text;
   color: transparent;
-  opacity: 0;
-  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.34s;
 }
 
 .landing__description {
@@ -6205,4 +6213,152 @@ html {
 @keyframes modalWindowSlideUp {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   REIKI'S CUSTOM LANDING SCREEN
+   (Does not affect App Screen)
+   ========================================= */
+
+.landing {
+  width: 100% !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 40px !important;
+  background: #ffffff !important; /* Pure White */
+  color: #1f2430 !important;
+  opacity: 0;
+  animation: landingFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden !important;
+}
+
+@keyframes landingFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.landing__main {
+  width: 100% !important;
+  max-width: 1200px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 40px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+}
+
+.landing__hero {
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 24px !important;
+}
+
+.landing__hero-text {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.landing__hero-text > .landing__hero-group {
+  display: flex !important;
+  flex-direction: row !important; /* Logo on the left, Title on the right */
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 24px !important; /* Restored gap for horizontal layout */
+  margin-bottom: 8px !important;
+  opacity: 0;
+  animation: landingHeroUp 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.34s !important;
+}
+
+.landing__hero-logo {
+  width: 120px !important; /* Slightly larger in vertical layout */
+  height: auto !important;
+  margin: 0 !important;
+  filter: brightness(0) !important;
+}
+
+.landing__title {
+  font-size: clamp(3.5rem, 10vw, 5.5rem) !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  color: #1f2430 !important;
+  text-align: center !important;
+}
+
+.landing__footer {
+  position: absolute !important;
+  bottom: 40px !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 1200px !important;
+  padding: 0 40px !important;
+  border-top: 1px solid rgba(31, 36, 60, 0.1) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  color: rgba(31, 36, 60, 0.3) !important;
+  background: transparent !important;
+}
+
+.landing__description {
+  font-size: 1.25rem !important;
+  color: rgba(31, 36, 60, 0.6) !important;
+  max-width: 800px !important;
+  margin: 16px auto 0 !important;
+  text-align: center !important;
+  line-height: 1.6 !important;
+}
+
+.landing__cta-group {
+  margin-top: 32px !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.landing__cta {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  padding: 26px 92px !important;
+  border-radius: 12px !important;
+  font-size: 1.6rem !important;
+  font-weight: 800 !important;
+  background: #4F6AFF !important; /* Brand Blue */
+  color: #ffffff !important; /* White Text */
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  text-decoration: none !important;
+  box-shadow: 0 15px 35px rgba(79, 106, 255, 0.3) !important;
+}
+
+.landing__cta:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  background: #7efaff !important; /* Light Blue on Hover */
+  color: #002a4d !important; /* Dark Text on Hover */
+  box-shadow: 0 20px 45px rgba(126, 250, 255, 0.5) !important;
+}
+
+/* About Modal (shared classes but re-styled for landing if needed) */
+.landing .guide-modal-overlay {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.landing .guide-modal {
+  background: #ffffff !important;
+  color: #1f2430 !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
 }
