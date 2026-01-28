@@ -1,0 +1,63 @@
+
+/* --- Ultimate Responsive Override (Force Vertical Stack) --- */
+@media (max-width: 1600px) {
+  /* Force Vertical Stack */
+  .hero-stage__panel--viewer {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 16px !important;
+    gap: 24px !important;
+  }
+
+  /* Unlock Global Scroll if needed */
+  html, body, .hero-app, .hero-stage {
+    overflow: auto !important;
+    height: auto !important;
+  }
+
+  .hero-app {
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* PDF Viewport Area */
+  .hero-viewport {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: 60vh !important;
+    min-height: 400px !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Side Panel Area */
+  .readability-side-panel {
+    flex: 1 0 auto !important;
+    width: 100% !important;
+    min-height: 400px !important;
+    height: auto !important;
+    border-left: none !important;
+    border-top: none !important;
+    max-width: none !important;
+  }
+
+  /* Allow inner content to expand */
+  .readability-report__body {
+    flex: 1 0 auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Make sure footer stays at bottom */
+  .studio-command-bar {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 100 !important;
+    flex-shrink: 0 !important;
+  }
+}
