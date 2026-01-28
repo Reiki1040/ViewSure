@@ -90,11 +90,11 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStart }) => {
       <main className="landing__main">
         <section className="landing__hero">
           <div className="landing__hero-text">
-            <div className="landing__hero-group">
-              <img src={ViewSureLogo} alt="" className="landing__hero-logo" />
-              <h1 className="landing__title">ViewSure</h1>
-            </div>
+            <img src={ViewSureLogo} alt="" className="landing__hero-logo" style={{ width: '120px', marginBottom: '24px', opacity: 0.9, display: 'block', margin: '0 auto' }} />
             <span className="landing__eyebrow">Projection Checker</span>
+            <h1 className="landing__title">
+              ViewSureで 見やすい資料へ
+            </h1>
             <p className="landing__description">
               テキストサイズなどをチェックし、見やすい資料作成をサポートします。
             </p>

@@ -1,0 +1,126 @@
+
+/* --- Editor Screen Enhancements (Soft corners, White theme, Black header) --- */
+
+.hero-app {
+  background: #ffffff !important;
+  display: grid !important;
+  grid-template-rows: auto 1fr auto !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.landing__header--app {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 12px 24px !important;
+  color: #1f2430 !important;
+}
+
+.landing__header--app .landing__brand-text {
+  color: #1f2430 !important;
+  font-weight: 800 !important;
+}
+
+.landing__header--app .landing__logo {
+  filter: invert(1) brightness(0.2) !important;
+}
+
+.hero-stage {
+  background: #f8f9fa !important;
+  overflow: hidden !important;
+  padding: 16px !important;
+  margin-top: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.hero-stage__panel--viewer {
+  display: flex !important;
+  gap: 16px !important;
+  height: 100% !important;
+  width: 100% !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.hero-viewport {
+  flex: 1 !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.viewport__canvas {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+  border: 1px solid #eee !important;
+  border-radius: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+.readability-side-panel {
+  flex: 0 0 400px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.readability-report__body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+
+.readability-report__item {
+  background: #f8f9fa !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+}
+
+.studio-command-bar {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  padding: 16px 24px !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 16px !important;
+  justify-content: center !important;
+  margin-top: 0 !important;
+  border-radius: 0 !important;
+}
+
+.studio-command-bar__button {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.readability-guide-trigger {
+  background: #7efaff !important;
+  color: #002a4d !important;
+  font-weight: 800 !important;
+  padding: 16px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  margin-top: 16px !important;
+  display: block !important;
+}
