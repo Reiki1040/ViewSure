@@ -541,38 +541,6 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     };
   }, [goToPage, pageCount, currentPage]); // pageCountを依存配列に追加
 
-  /**
-   * スタート画面からアプリ画面へ遷移する
-   */
-  const handleStart = useCallback(() => {
-    // 履歴に追加（戻るボタンで戻れるようにする）
-    window.history.pushState({ app: true }, '', '#app');
-    setIsTopVisible(false);
-  }, []);
-
-  // ブラウザバックの検知
-  useEffect(() => {
-    const handlePopState = () => {
-      // 履歴が戻った（ハッシュが消えた）場合、トップ画面を表示
-      if (window.location.hash !== '#app') {
-        setIsTopVisible(true);
-      } else {
-        setIsTopVisible(false);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    
-    // 初期ロード時にハッシュがあればアプリ画面を表示
-    if (window.location.hash === '#app') {
-      setIsTopVisible(false);
-    }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
-
   // -- Render Helpers --
   
   const hasDocument = pageCount > 0;
