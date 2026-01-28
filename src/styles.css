@@ -4534,15 +4534,12 @@ canvas.viewport__canvas {
   border-bottom: 1px solid var(--vs-border);
 }
 
-/* Since header is white, we need dark text for the logo/brand if it was white */
-.landing__brand-text {
+.landing__header--app .landing__brand-text {
   color: #1f2430 !important;
 }
-/* If logo is white image, it might be invisible. I should check logo. */
-/* Assuming logoWhite is used. I might need a filter or different logo. */
-/* Using filter invert to make white logo black */
-.landing__logo {
-  filter: invert(1) !important;
+
+.landing__header--app .landing__logo {
+  filter: invert(1) brightness(0.2) !important;
 }
 
 .studio-command-bar {
