@@ -22,6 +22,46 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStart }) => {
 
   return (
     <div className="landing">
+      <header className="landing__header">
+        <div className="landing__brand">
+          <img src={ViewSureLogo} alt="ViewSure" className="landing__logo" />
+          <span className="landing__brand-text">ViewSure</span>
+        </div>
+        <nav className="landing__nav">
+          <a href="#features">特徴</a>
+          <button 
+            type="button" 
+            onClick={() => setIsAboutOpen(true)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              color: 'rgba(215, 224, 255, 0.72)',
+              fontSize: '0.98rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              padding: 0,
+              fontFamily: 'inherit'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.color = 'rgba(153, 178, 255, 0.95)'}
+            onMouseOut={(e) => e.currentTarget.style.color = 'rgba(215, 224, 255, 0.72)'}
+          >
+            About
+          </button>
+          <a 
+            href="https://github.com/Reiki1040/ViewSure" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
+        </nav>
+        <div className="landing__header-actions">
+          <button className="landing__header-cta" onClick={onStart}>
+            アプリを起動
+          </button>
+        </div>
+      </header>
+
       {isAboutOpen && (
         <div className="guide-modal-overlay" onClick={() => setIsAboutOpen(false)}>
           <div className="guide-modal" onClick={(e) => e.stopPropagation()}>
@@ -65,6 +105,30 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStart }) => {
               </button>
             </div>
 
+          </div>
+        </section>
+
+        <section id="features" className="landing__features">
+          <div className="landing__features-header">
+            <p>FEATURES</p>
+            <h2>ViewSureの3つの特徴</h2>
+          </div>
+          <div className="landing__feature-grid">
+            <div className="landing__feature-card">
+              <div className="landing__feature-accent">01</div>
+              <h3>リアルな投影シミュレーション</h3>
+              <p>実際のプロジェクターのコントラスト比や色域を再現。会場の環境に合わせた資料の視認性を事前に確認できます。</p>
+            </div>
+            <div className="landing__feature-card">
+              <div className="landing__feature-accent">02</div>
+              <h3>アクセシビリティ・チェック</h3>
+              <p>WCAG 2.1の指標に基づき、配色バランスやコントラスト、文字サイズを自動で解析し、視認性の目安を提示します。</p>
+            </div>
+            <div className="landing__feature-card">
+              <div className="landing__feature-accent">03</div>
+              <h3>改善アドバイス</h3>
+              <p>解析結果から「文字サイズ」「コントラスト」などの修正ポイントを提示。迷わず資料の品質を向上させることができます。</p>
+            </div>
           </div>
         </section>
       </main>
