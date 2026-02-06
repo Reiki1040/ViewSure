@@ -56,6 +56,41 @@ src/
 └── main.tsx
 ```
 
+### 4-1. ファイル構造（詳細）
+
+```
+src/
+├── App.tsx                      # 画面遷移・状態管理・読みやすさチェック統合
+├── main.tsx                     # React 入口
+├── styles.css                   # メインスタイル
+├── assets/                      # 画像・アイコン
+├── components/                  # UI コンポーネント
+│   ├── LandingScreen.tsx
+│   ├── FileUploader.tsx
+│   ├── ProjectionViewport.tsx
+│   └── LoadingSpinner.tsx
+├── hooks/                       # カスタムフック
+│   └── usePdfRenderer.ts         # PDF 読み込みと renderer ライフサイクル
+├── types/                       # 型定義
+│   └── pdf.ts                    # テキスト抽出・座標系の共有型
+└── utils/                        # ドメインロジック
+    ├── pdf.ts                    # pdf.js ラッパー、描画・テキスト抽出
+    ├── toneMapping.ts            # プロジェクター投影シミュレーション
+    ├── wcag.ts                   # コントラスト・配色バランス解析
+    ├── wcagFix.ts                # 自動修正テンプレート生成
+    ├── imageExtractor.ts         # PDF 内画像の抽出
+    ├── rawImageExtractor.ts      # 低レベル抽出（検証用途）
+    └── clusterExtractor.ts       # クラスタ抽出（検証用途）
+
+public/
+└── wasm/                         # WASM バイナリ
+    └── tone_mapping.wasm
+
+dist/                             # Vite ビルド出力（デプロイ用）
+
+docs/ (root .md ファイル群)       # 仕様・設計メモ・実装記録
+```
+
 ---
 
 ## 5. セットアップ
