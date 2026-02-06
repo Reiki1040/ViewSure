@@ -129,6 +129,7 @@ const extractByOperators = async (page: PDFPageProxy, scale: number, textBoxes: 
       const rect = rectFromCTM(ctm, image.width, image.height);
       const overlap = textBoxes.reduce((acc, box) => acc + overlapArea(rect, box), 0);
       const ratio = overlap / Math.max(rect.width * rect.height, 1);
+      // 文字との重なりが高いものは「画像ではなくテキスト背景」とみなして除外
       if (ratio > 0.05) continue;
       regions.push({ id: String(imageId), rect });
     }
@@ -155,6 +156,7 @@ const extractImagesFromPage = async (page: PDFPageProxy, scale = 2): Promise<Ima
 
   const crops: ImageCrop[] = [];
   op.regions.forEach((region) => {
+    // 画面全体に近い背景画像、極小画像、文字と大きく重なる領域は除外
     if (isLargeBackground(region.rect, viewport.width, viewport.height) || isTooSmall(region.rect, viewport.width, viewport.height)) {
       return;
     }

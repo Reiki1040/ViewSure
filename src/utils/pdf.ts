@@ -30,6 +30,7 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
   const loadingTask = pdfjs.getDocument({ data });
   const pdf = await loadingTask.promise;
   // ページ描画のメモ化（完了済みと進行中の2種類）で重複レンダリングを防ぐ。
+  // cache: 完了済みの Canvas を保持 / pending: 進行中の Promise を共有
   const cache = new Map<number, HTMLCanvasElement>();
   const pending = new Map<number, Promise<HTMLCanvasElement>>();
   let disposed = false;
@@ -60,6 +61,7 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
     const pageNumber = ensurePageNumber(index);
 
     // 非同期レンダリングプロセス
+    // 同じページの同時要求は pending を共有して二重レンダリングを防ぐ
     const renderPromise = (async () => {
       try {
         const page = await pdf.getPage(pageNumber);
@@ -117,6 +119,7 @@ export const createPdfRenderer = async (data: ArrayBuffer, scale = 1.5) => {
 
   const getPageTextContent = async (index: number): Promise<PdfPageTextContent> => {
     // ページを取得し、テキストアイテムを viewport 座標系（左上原点）に正規化する。
+    // pdf.js の生座標（左下原点）から Canvas 座標（左上原点）へ変換して保存する。
     const pageNumber = ensurePageNumber(index); // 0-based index を pdf.js の 1-based に変換し、範囲外をチェック
     const page = await pdf.getPage(pageNumber); // 対象ページのオブジェクトを取得
     const viewport = page.getViewport({ scale }); // 画面スケールに合わせた viewport を作成

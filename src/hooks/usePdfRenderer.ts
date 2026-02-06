@@ -23,6 +23,7 @@ interface UsePdfRendererReturn {
  */
 export const usePdfRenderer = (): UsePdfRendererReturn => {
   const rendererRef = useRef<PdfRenderer | null>(null);
+  // 元PDFの ArrayBuffer を保持（画像抽出など再処理用）
   const sourceBufferRef = useRef<ArrayBuffer | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);

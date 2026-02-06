@@ -141,7 +141,11 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
 
   /**
    * 指定されたページをキャンバスに描画する
-   * 
+   *
+   * - pdf.js のレンダリング結果を表示用キャンバスへ転写
+   * - プロジェクタープレビューの有無でトーンマッピングを切り替え
+   * - 描画完了後にページ状態（currentPage / aspectRatio）を同期
+   *
    * @param pageNumber 描画するページ番号 (1-based)
    */
   const renderPage = useCallback(
@@ -198,6 +202,10 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   /**
    * ファイルが選択されたときの処理
    * PDFをロードし、初期画像の抽出などを行う
+   *
+   * - 直前の解析・表示状態をリセット
+   * - 画像抽出は非同期で走らせ、UIの初期描画を優先
+   * - 読み込み後に自動チェックを予約（autoCheckPending）
    */
   const handleFileSelected = useCallback(
     async (file: File) => {
@@ -324,6 +332,9 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   /**
    * PDF全体の読みやすさをチェックする（WCAG基準など）
    * 全ページを走査し、問題点をリストアップする
+   *
+   * 判定は「テキスト量」「フォントサイズ」「行間」「配色/原色」「コントラスト」などの
+   * ヒューリスティックの組み合わせ。正確性よりも“注意喚起”を優先する。
    */
   const handleReadabilityCheck = useCallback(async () => {
     const rendererInstance = getRenderer();
@@ -481,6 +492,7 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
   }, [currentPage, pageCount, isPreviewEnabled, isAutoFixEnabled, renderPage]);
 
   useEffect(() => {
+    // 初回読み込み後に一度だけ自動チェックを実行（UIの初期描画をブロックしないため遅延）
     if (!autoCheckPending) {
       return;
     }
@@ -559,6 +571,7 @@ const [galleryImages, setGalleryImages] = useState<string[]>([]); // ギャラ�
     currentReadability ? currentReadability.flags.filter((f) => f.includes(keyword)).length : 0;
 
   // 10% または 2ページ移動の計算 (切り上げで最低10%を確保)
+  // ページ数が少ない資料でも「大ジャンプ」操作が成立するようにする
   const jumpAmount = pageCount <= 10 ? 2 : Math.ceil(pageCount * 0.1);
 
   if (isTopVisible) {

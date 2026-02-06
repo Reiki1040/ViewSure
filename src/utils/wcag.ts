@@ -65,6 +65,7 @@ const collectSamples = (
   const sw = Math.max(1, Math.floor(clamp(width, 1, ctx.canvas.width - sx)));
   const sh = Math.max(1, Math.floor(clamp(height, 1, ctx.canvas.height - sy)));
   const data = ctx.getImageData(sx, sy, sw, sh).data;
+  // stride は「画素間引き」の度合い。2以上で高速化とノイズ抑制のバランスを取る。
   const stride = options?.stride ?? 2;
   const exclude = options?.exclude;
   const samples: Sample[] = [];
@@ -92,6 +93,7 @@ const collectSamples = (
 };
 
 const summarizeSamples = (samples: Sample[]) => {
+  // 低輝度/高輝度の代表色を「分位点の周辺平均」で推定し、影やハイライトの影響を軽減
   const sorted = [...samples].sort((a, b) => a.lum - b.lum);
   const pickColor = (percentile: number) => {
     const index = Math.floor((sorted.length - 1) * percentile);
@@ -163,6 +165,7 @@ export const analyzePageContrast = (ctx: CanvasRenderingContext2D, textContent: 
   const issues: ContrastIssue[] = [];
 
   textContent.runs.forEach((run) => {
+    // テキスト周辺の背景サンプルを取るための安全マージン
     const margin = 4;
     const textSamples = collectSamples(ctx, run.x, run.y, run.width, run.height, { stride: 2 });
     const bgSamples = collectSamples(
@@ -184,7 +187,7 @@ export const analyzePageContrast = (ctx: CanvasRenderingContext2D, textContent: 
       fg = assumeDarkText ? textStats.low.color : textStats.high.color;
       bg = assumeDarkText ? bgStats.high.color : bgStats.low.color;
     } else {
-      // Fallback for very small glyphs
+      // Fallback for very small glyphs (微小文字は周辺平均との差で粗く推定する)
       const fgSampleSize = Math.max(2, Math.min(run.width, run.height) * 0.2);
       fg = sampleAverageColor(
         ctx,
@@ -323,6 +326,7 @@ export const analyzeColorBalance = (ctx: CanvasRenderingContext2D): ColorBalance
   let totalSamples = 0;
 
   const rgbToHex = (r: number, g: number, b: number) => {
+    // 32刻みで量子化して色数を削減し、主色の推定を安定化させる
     const q = 32;
     const qr = Math.round(r / q) * q;
     const qg = Math.round(g / q) * q;

@@ -76,6 +76,7 @@ export async function initWasm(): Promise<void> {
  */
 export function applyToneMapping(ctx: CanvasRenderingContext2D, width: number, height: number): void {
   // Step 0: 投影で発生する解像感の低下を模倣（ダウンスケール→アップスケールで輪郭を甘くする）
+  // 低解像度化による“にじみ”を先に入れてから、トーン/コントラスト補正を行う
   const resolutionFactor = 0.7; // 1未満にするとソフトフォーカスに近づく
   const sourceCanvas = ctx.canvas as HTMLCanvasElement;
   const lowResCanvas = document.createElement('canvas');

@@ -33,6 +33,7 @@ type LineInfo = {
 };
 
 const buildLineInfos = (textContent: PdfPageTextContent): LineInfo[] => {
+  // 近接する run を同一行としてマージし、行単位の情報を作る
   const sorted = [...textContent.runs].sort((a, b) => a.y - b.y || a.x - b.x);
   const lineThreshold = Math.max(6, textContent.height * 0.02);
   const lines: Array<{ y: number; runs: PdfPageTextRun[] }> = [];
@@ -67,6 +68,7 @@ const buildLineInfos = (textContent: PdfPageTextContent): LineInfo[] => {
 };
 
 const extractHeadingAndBody = (lineInfos: LineInfo[]) => {
+  // 最大フォントサイズを見出しとみなし、本文との二層構造を作る
   if (!lineInfos.length) {
     return {
       heading: '資料タイトル',
@@ -87,6 +89,7 @@ const extractHeadingAndBody = (lineInfos: LineInfo[]) => {
 };
 
 const selectBodyLines = (bodyLines: LineInfo[], issues: ContrastIssue[]) => {
+  // 指摘対象のテキストや箇条書きを優先して抽出し、最大8行までに絞る
   if (!bodyLines.length) {
     return [];
   }
@@ -127,6 +130,7 @@ const detectImageRegions = (
     return [] as Array<{ x: number; y: number; width: number; height: number; canvas: HTMLCanvasElement }>;
   }
 
+  // タイル分割で「テキスト以外の画像っぽい領域」をざっくり検出
   const cols = 20;
   const rows = 14;
   const tileW = pageCanvas.width / cols;
@@ -193,6 +197,7 @@ const detectImageRegions = (
         }
       }
 
+      // 画像らしいテクスチャがあるタイルだけを候補とする
       if (variance > 1200 && edges > (sw * sh) / 200) {
         imageTiles.push({ r, c });
       }
@@ -294,6 +299,7 @@ export const applyAutoFix = (
   providedImages?: ImageCrop[],
   fontFamily = '"Inter", "Hiragino Sans", system-ui'
 ) => {
+  // テンプレートの主目的: 文字の視認性を確保し、情報の階層を単純化する
   const lineInfos = buildLineInfos(textContent);
   const { heading, bodyLines } = extractHeadingAndBody(lineInfos);
   const bullets = selectBodyLines(bodyLines, issues);

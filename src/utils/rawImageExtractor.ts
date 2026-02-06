@@ -1,3 +1,5 @@
+// 低レベルの画像抽出（JPEG XObject 直接取得）
+// 現在のアプリ本体では未使用。精度検証や比較用のユーティリティとして残している。
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 
 export type ImageCrop = {

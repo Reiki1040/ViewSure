@@ -1,3 +1,5 @@
+// 画像領域をクラスタリングで推定する抽出器
+// 現在のアプリ本体では未使用。画像検出の代替案として保持。
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 
 export type ImageCrop = {
